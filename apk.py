@@ -5,6 +5,9 @@ from datetime import datetime
 import smtplib
 from email.mime.text import MIMEText
 import json
+import google.api_core.exceptions
+import google.api_core.retry as retry
+
 
 # Carregar as credenciais do Firebase e e-mail a partir do Streamlit secrets
 FIREBASE_CREDENTIALS = None
@@ -99,15 +102,26 @@ def cancelar_agendamento(data, horario, telefone):
         return None
 
 # Função para verificar disponibilidade do horário no Firebase
+@retry.Retry()
 def verificar_disponibilidade(data, horario):
+    if not db:
+        st.error("Firestore não inicializado.")
+        return False  # Retorna False se o Firestore não estiver inicializado
     chave_agendamento = f"{data}_{horario}"
     agendamento_ref = db.collection('agendamentos').document(chave_agendamento)
-    doc = agendamento_ref.get()
-    if doc.exists:
-        st.write(f"Horário {horario} no dia {data} já ocupado.")
-    else:
-        st.write(f"Horário {horario} no dia {data} disponível.")
-    return not doc.exists  # Retorna True se o horário estiver disponível
+    try:
+        doc = agendamento_ref.get()
+        if doc.exists:
+            st.write(f"Horário {horario} no dia {data} já ocupado.")
+        else:
+            st.write(f"Horário {horario} no dia {data} disponível.")
+        return not doc.exists  # Retorna True se o horário estiver disponível
+    except google.api_core.exceptions.RetryError as e:
+        st.error(f"Erro de conexão com o Firestore: {e}")
+        return False  # Retorna False em caso de erro
+    except Exception as e:
+        st.error(f"Erro inesperado ao verificar disponibilidade: {e}")
+        return False  # Retorna False em caso de erro
 
 # Interface Streamlit
 st.title("Barbearia Lucas Borges - Agendamentos")
