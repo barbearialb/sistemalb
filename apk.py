@@ -7,19 +7,46 @@ from email.mime.text import MIMEText
 import os
 import json
 
-# Carregar as credenciais do Firebase e e-mail a partir das variáveis de ambiente
-FIREBASE_CREDENTIALS = json.loads(os.getenv("FIREBASE_CREDENTIALS"))
-EMAIL = os.getenv("EMAIL_CREDENTIALS_EMAIL")
-SENHA = os.getenv("EMAIL_CREDENTIALS_PASSWORD")
+# Carregar as credenciais do Firebase a partir das variáveis de ambiente
+FIREBASE_CREDENTIALS = None
+EMAIL = None
+SENHA = None
+
+try:
+    # Carregar credenciais do Firebase
+    firebase_credentials_json = os.getenv("FIREBASE_CREDENTIALS")
+    if not firebase_credentials_json:
+        raise ValueError("Variável de ambiente 'FIREBASE_CREDENTIALS' não definida.")
+    FIREBASE_CREDENTIALS = json.loads(firebase_credentials_json)
+
+    # Carregar credenciais de e-mail
+    EMAIL = os.getenv("EMAIL_CREDENCIADO")
+    SENHA = os.getenv("EMAIL_SENHA")
+    if not EMAIL or not SENHA:
+        raise ValueError("Variáveis de ambiente 'EMAIL_CREDENCIADO' ou 'EMAIL_SENHA' não definidas.")
+except json.JSONDecodeError as e:
+    st.error(f"Erro ao decodificar as credenciais do Firebase: {e}")
+except ValueError as e:
+    st.error(f"Erro de configuração: {e}")
+except Exception as e:
+    st.error(f"Erro inesperado: {e}")
 
 # Inicializar Firebase com as credenciais
-if not firebase_admin._apps:
-    cred = credentials.Certificate(FIREBASE_CREDENTIALS)
-    firebase_admin.initialize_app(cred)
+if FIREBASE_CREDENTIALS:
+    if not firebase_admin._apps:  # Verifica se o Firebase já foi inicializado
+        try:
+            cred = credentials.Certificate(FIREBASE_CREDENTIALS)
+            firebase_admin.initialize_app(cred)
+            st.success("Firebase inicializado com sucesso.")
+        except Exception as e:
+            st.error(f"Erro ao inicializar o Firebase: {e}")
+    else:
+        st.info("Firebase já inicializado.")
 else:
-    db = firestore.client()
+    st.error("Credenciais do Firebase não carregadas. Verifique as variáveis de ambiente.")
 
-db = firestore.client()
+# Obter referência do Firestore
+db = firestore.client() if firebase_admin._apps else None
 
 # Dados básicos
 horarios = [f"{h:02d}:{m:02d}" for h in range(8, 20) for m in (0, 30)]
@@ -44,7 +71,7 @@ def enviar_email(assunto, mensagem):
 
         with smtplib.SMTP('smtp.gmail.com', 587) as server:
             server.starttls()
-            server.login(EMAIL, SENHA)
+            server.login(EMAIL, SENHA)  # Login usando as credenciais do e-mail
             server.sendmail(EMAIL, EMAIL, msg.as_string())
     except Exception as e:
         st.error(f"Erro ao enviar e-mail: {e}")
@@ -60,9 +87,6 @@ def salvar_agendamento(data, horario, nome, telefone, servicos, barbeiro):
         'data': data,
         'horario': horario
     })
-
-
-
 
 # Função para cancelar agendamento no Firestore
 def cancelar_agendamento(data, horario, telefone):
@@ -85,8 +109,6 @@ def verificar_disponibilidade(data, horario):
 # Interface Streamlit
 st.title("Barbearia Lucas Borges - Agendamentos")
 st.header("Faça seu agendamento ou cancele")
- # Caminho para o arquivo PNG
-
 st.image("https://github.com/barbearialb/sistemalb/blob/main/icone.png?raw=true", use_container_width=True)
 
 # Aba de Agendamento
@@ -153,4 +175,4 @@ if st.button("Cancelar Agendamento"):
         st.success("Agendamento cancelado com sucesso!")
         st.info("Resumo do cancelamento:\n" + resumo_cancelamento)
     else:
-        st.error("Agendamento não encontrado ou telefone incorreto.")
+        st.error("Não há agendamento para o telefone informado nesse horário.")
