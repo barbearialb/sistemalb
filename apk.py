@@ -4,30 +4,26 @@ from firebase_admin import credentials, firestore, auth
 from datetime import datetime
 import smtplib
 from email.mime.text import MIMEText
-import os
 import json
 
-# Carregar as credenciais do Firebase a partir das variáveis de ambiente
+# Carregar as credenciais do Firebase e e-mail a partir do Streamlit secrets
 FIREBASE_CREDENTIALS = None
 EMAIL = None
 SENHA = None
 
 try:
     # Carregar credenciais do Firebase
-    firebase_credentials_json = os.getenv("FIREBASE_CREDENTIALS")
-    if not firebase_credentials_json:
-        raise ValueError("Variável de ambiente 'FIREBASE_CREDENTIALS' não definida.")
+    firebase_credentials_json = st.secrets["firebase"]["FIREBASE_CREDENTIALS"]
     FIREBASE_CREDENTIALS = json.loads(firebase_credentials_json)
 
     # Carregar credenciais de e-mail
-    EMAIL = os.getenv("EMAIL_CREDENCIADO")
-    SENHA = os.getenv("EMAIL_SENHA")
-    if not EMAIL or not SENHA:
-        raise ValueError("Variáveis de ambiente 'EMAIL_CREDENCIADO' ou 'EMAIL_SENHA' não definidas.")
+    EMAIL = st.secrets["EMAIL_CREDENCIADO"]
+    SENHA = st.secrets["EMAIL_SENHA"]
+
+except KeyError as e:
+    st.error(f"Chave ausente no arquivo secrets.toml: {e}")
 except json.JSONDecodeError as e:
     st.error(f"Erro ao decodificar as credenciais do Firebase: {e}")
-except ValueError as e:
-    st.error(f"Erro de configuração: {e}")
 except Exception as e:
     st.error(f"Erro inesperado: {e}")
 
@@ -43,7 +39,7 @@ if FIREBASE_CREDENTIALS:
     else:
         st.info("Firebase já inicializado.")
 else:
-    st.error("Credenciais do Firebase não carregadas. Verifique as variáveis de ambiente.")
+    st.error("Credenciais do Firebase não carregadas. Verifique o arquivo secrets.toml.")
 
 # Obter referência do Firestore
 db = firestore.client() if firebase_admin._apps else None
