@@ -102,12 +102,12 @@ def cancelar_agendamento(data, horario, telefone):
 def verificar_disponibilidade(data, horario):
     chave_agendamento = f"{data}_{horario}"
     agendamento_ref = db.collection('agendamentos').document(chave_agendamento)
-    try:
-        doc = agendamento_ref.get()
-        return not doc.exists  # Retorna True se o horário estiver disponível
-    except Exception as e:
-        st.error(f"Erro ao verificar a disponibilidade: {e}")
-        return False  # Caso haja erro, considerar como indisponível
+    doc = agendamento_ref.get()
+    if doc.exists:
+        st.write(f"Horário {horario} no dia {data} já ocupado.")
+    else:
+        st.write(f"Horário {horario} no dia {data} disponível.")
+    return not doc.exists  # Retorna True se o horário estiver disponível
 
 # Interface Streamlit
 st.title("Barbearia Lucas Borges - Agendamentos")
