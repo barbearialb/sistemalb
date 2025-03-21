@@ -87,19 +87,27 @@ def salvar_agendamento(data, horario, nome, telefone, servicos, barbeiro):
 def cancelar_agendamento(data, horario, telefone):
     chave_agendamento = f"{data}_{horario}"
     agendamento_ref = db.collection('agendamentos').document(chave_agendamento)
-    doc = agendamento_ref.get()
-    if doc.exists and doc.to_dict()['telefone'] == telefone:
-        agendamento_ref.delete()
-        return doc.to_dict()  # Retorna os dados do agendamento cancelado
-    else:
+    try:
+        doc = agendamento_ref.get()
+        if doc.exists and doc.to_dict()['telefone'] == telefone:
+            agendamento_ref.delete()
+            return doc.to_dict()  # Retorna os dados do agendamento cancelado
+        else:
+            return None
+    except Exception as e:
+        st.error(f"Erro ao acessar o Firestore: {e}")
         return None
 
 # Função para verificar disponibilidade do horário no Firebase
 def verificar_disponibilidade(data, horario):
     chave_agendamento = f"{data}_{horario}"
     agendamento_ref = db.collection('agendamentos').document(chave_agendamento)
-    doc = agendamento_ref.get()
-    return not doc.exists  # Retorna True se o horário estiver disponível
+    try:
+        doc = agendamento_ref.get()
+        return not doc.exists  # Retorna True se o horário estiver disponível
+    except Exception as e:
+        st.error(f"Erro ao verificar a disponibilidade: {e}")
+        return False  # Caso haja erro, considerar como indisponível
 
 # Interface Streamlit
 st.title("Barbearia Lucas Borges - Agendamentos")
@@ -132,21 +140,22 @@ if st.button("Confirmar Agendamento"):
         elif len(servicos_selecionados) == 2 and "Barba" not in servicos_selecionados:
             st.error("Se você escolher dois serviços, o segundo deve ser a barba.")
         else:
-            if verificar_disponibilidade(data, horario):
-                resumo = f"""
-                Nome: {nome}
-                Telefone: {telefone}
-                Data: {data}
-                Horário: {horario}
-                Barbeiro: {barbeiro}
-                Serviços: {', '.join(servicos_selecionados)}
-                """
-                salvar_agendamento(data, horario, nome, telefone, servicos_selecionados, barbeiro)
-                enviar_email("Agendamento Confirmado", resumo)
-                st.success("Agendamento confirmado com sucesso!")
-                st.info("Resumo do agendamento:\n" + resumo)
-            else:
-                st.error("O horário escolhido já está ocupado. Por favor, selecione outro horário.")
+            with st.spinner("Verificando disponibilidade..."):
+                if verificar_disponibilidade(data, horario):
+                    resumo = f"""
+                    Nome: {nome}
+                    Telefone: {telefone}
+                    Data: {data}
+                    Horário: {horario}
+                    Barbeiro: {barbeiro}
+                    Serviços: {', '.join(servicos_selecionados)}
+                    """
+                    salvar_agendamento(data, horario, nome, telefone, servicos_selecionados, barbeiro)
+                    enviar_email("Agendamento Confirmado", resumo)
+                    st.success("Agendamento confirmado com sucesso!")
+                    st.info("Resumo do agendamento:\n" + resumo)
+                else:
+                    st.error("O horário escolhido já está ocupado. Por favor, selecione outro horário.")
     else:
         st.error("Por favor, preencha todos os campos e selecione pelo menos 1 serviço.")
 
@@ -156,18 +165,19 @@ telefone_cancelar = st.text_input("Telefone para Cancelamento")
 horario_cancelar = st.selectbox("Horário do Agendamento", horarios)
 
 if st.button("Cancelar Agendamento"):
-    cancelado = cancelar_agendamento(data, horario_cancelar, telefone_cancelar)
-    if cancelado:
-        resumo_cancelamento = f"""
-        Nome: {cancelado['nome']}
-        Telefone: {cancelado['telefone']}
-        Data: {cancelado['data']}
-        Horário: {cancelado['horario']}
-        Barbeiro: {cancelado['barbeiro']}
-        Serviços: {', '.join(cancelado['servicos'])}
-        """
-        enviar_email("Agendamento Cancelado", resumo_cancelamento)
-        st.success("Agendamento cancelado com sucesso!")
-        st.info("Resumo do cancelamento:\n" + resumo_cancelamento)
-    else:
-        st.error("Não há agendamento para o telefone informado nesse horário.")
+    with st.spinner("Processando cancelamento..."):
+        cancelado = cancelar_agendamento(data, horario_cancelar, telefone_cancelar)
+        if cancelado:
+            resumo_cancelamento = f"""
+            Nome: {cancelado['nome']}
+            Telefone: {cancelado['telefone']}
+            Data: {cancelado['data']}
+            Horário: {cancelado['horario']}
+            Barbeiro: {cancelado['barbeiro']}
+            Serviços: {', '.join(cancelado['servicos'])}
+            """
+            enviar_email("Agendamento Cancelado", resumo_cancelamento)
+            st.success("Agendamento cancelado com sucesso!")
+            st.info("Resumo do cancelamento:\n" + resumo_cancelamento)
+        else:
+            st.error("Não há agendamento para o telefone informado nesse horário.")
