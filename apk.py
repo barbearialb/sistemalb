@@ -38,10 +38,7 @@ if FIREBASE_CREDENTIALS:
             firebase_admin.initialize_app(cred)
         except Exception as e:
             st.error(f"Erro ao inicializar o Firebase: {e}")
-    else:
-        st.info("Firebase já inicializado.")
-else:
-    st.error("Credenciais do Firebase não carregadas. Verifique o arquivo secrets.toml.")
+    
 
 # Obter referência do Firestore
 db = firestore.client() if firebase_admin._apps else None
