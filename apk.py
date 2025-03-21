@@ -17,8 +17,8 @@ try:
     FIREBASE_CREDENTIALS = json.loads(firebase_credentials_json)
 
     # Carregar credenciais de e-mail
-    EMAIL = st.secrets["EMAIL_CREDENCIADO"]
-    SENHA = st.secrets["EMAIL_SENHA"]
+    EMAIL = st.secrets["email"]["EMAIL_CREDENCIADO"]
+    SENHA = st.secrets["email"]["EMAIL_SENHA"]
 
 except KeyError as e:
     st.error(f"Chave ausente no arquivo secrets.toml: {e}")
@@ -33,7 +33,6 @@ if FIREBASE_CREDENTIALS:
         try:
             cred = credentials.Certificate(FIREBASE_CREDENTIALS)
             firebase_admin.initialize_app(cred)
-            st.success("Firebase inicializado com sucesso.")
         except Exception as e:
             st.error(f"Erro ao inicializar o Firebase: {e}")
     else:
