@@ -61,7 +61,11 @@ if FIREBASE_CREDENTIALS:
 db = firestore.client() if firebase_admin._apps else None
 
 # Dados básicos
-# A lista de horários base será gerada dinamicamente na tabela
+horarios_base = []
+for h in range(8, 20):
+    for m in (0, 30):
+        if h < 12 or h >= 14:  # Bloquear horários de almoço
+            horarios_base.append(f"{h:02d}:{m:02d}")
 
 servicos = {
     "Tradicional": 15,
@@ -249,19 +253,7 @@ for barbeiro in barbeiros:
     html_table += f'<th style="padding: 8px; border: 1px solid #ddd; background-color: #0e1117; color: white;">{barbeiro}</th>'
 html_table += '</tr>'
 
-# Gerar horários base dinamicamente
-data_obj_tabela = datetime.strptime(data_para_tabela, '%d/%m/%Y')
-dia_da_semana_tabela = data_obj_tabela.weekday()  # 0 = segunda, 6 = domingo
-horarios_tabela = []
-for h in range(8, 20):
-    for m in (0, 30):
-        horario_str = f"{h:02d}:{m:02d}"
-        if dia_da_semana_tabela == 5:  # Sábado
-            horarios_tabela.append(horario_str)
-        elif h < 12 or h >= 14:  # Outros dias, bloquear almoço
-            horarios_tabela.append(horario_str)
-
-for horario in horarios_tabela:
+for horario in horarios_base:
     html_table += f'<tr><td style="padding: 8px; border: 1px solid #ddd;">{horario}</td>'
     for barbeiro in barbeiros:
         disponivel = verificar_disponibilidade(data_para_tabela, horario, barbeiro)
@@ -412,3 +404,51 @@ if submitted:
                         Horário: {horario_agendamento}
                         Barbeiro: {barbeiro_selecionado}
                         Serviços: {', '.join(servicos_selecionados)}
+                        """
+                        salvar_agendamento(data_agendamento, horario_agendamento, nome, telefone, servicos_selecionados, barbeiro_selecionado)
+                        enviar_email("Agendamento Confirmado", resumo)
+                        verificar_disponibilidade.clear()
+                        st.success("Agendamento confirmado com sucesso!")
+                        st.info("Resumo do agendamento:\n" + resumo)
+                        time.sleep(5)
+                        st.rerun()
+                else:
+                    st.error("O horário escolhido já está ocupado. Por favor, selecione outro horário ou veja outro barbeiro.")
+        else:
+            st.error("Por favor, preencha todos os campos e selecione pelo menos 1 serviço.")
+
+# Aba de Cancelamento
+with st.form("cancelar_form"):
+    st.subheader("Cancelar Agendamento")
+    telefone_cancelar = st.text_input("Telefone para Cancelamento")
+    data_cancelar = st.date_input("Data do Agendamento", min_value=datetime.today()).strftime('%d/%m/%Y')
+    horario_cancelar = st.selectbox("Horário do Agendamento", horarios_base)
+    barbeiro_cancelar = st.selectbox("Barbeiro do Agendamento", barbeiros) # Adicionando a seleção do barbeiro
+    submitted_cancelar = st.form_submit_button("Cancelar Agendamento")
+    if submitted_cancelar:
+        with st.spinner("Processando cancelamento..."):
+            cancelado = cancelar_agendamento(data_cancelar, horario_cancelar, telefone_cancelar, barbeiro_cancelar)
+
+        if cancelado:
+            resumo_cancelamento = f"""
+            Nome: {cancelado['nome']}
+            Telefone: {cancelado['telefone']}
+            Data: {cancelado['data']}
+            Horário: {cancelado['horario']}
+            Barbeiro: {cancelado['barbeiro']}
+            Serviços: {', '.join(cancelado['servicos'])}
+            """
+            enviar_email("Agendamento Cancelado", resumo_cancelamento)
+            verificar_disponibilidade.clear()
+            st.success("Agendamento cancelado com sucesso!")
+            st.info("Resumo do cancelamento:\n" + resumo_cancelamento)
+            # Verificar se o horário seguinte estava bloqueado e desbloqueá-lo
+            if "Barba" in cancelado['servicos'] and any(corte in cancelado['servicos'] for corte in ["Tradicional", "Social", "Degradê", "Navalhado"]):
+                horario_seguinte = (datetime.strptime(cancelado['horario'], '%H:%M') + timedelta(minutes=30)).strftime('%H:%M')
+                 # Adicione estas linhas temporariamente para verificar os valores
+                desbloquear_horario(cancelado['data'], horario_seguinte, cancelado['barbeiro'])
+                st.info("O horário seguinte foi desbloqueado.")
+            time.sleep(5)
+            st.rerun()
+        else:
+            st.error(f"Não há agendamento para o telefone informado nesse horário e com o barbeiro selecionado.")
