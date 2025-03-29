@@ -26,7 +26,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# Carregar as credenciais do Firebase e e-mail a partir do Streamlit secrets
+# Carregar as credenciais do Firebase e-mail a partir do Streamlit secrets
 FIREBASE_CREDENTIALS = None
 EMAIL = None
 SENHA = None
@@ -230,16 +230,17 @@ st.header("Faça seu agendamento ou cancele")
 st.image("https://github.com/barbearialb/sistemalb/blob/main/icone.png?raw=true", use_container_width=True)
 
 if 'data_agendamento' not in st.session_state:
-    st.session_state.data_agendamento = datetime.today().strftime('%d/%m/%Y')
+    st.session_state.data_agendamento = datetime.today().date()  # Inicializar como objeto date
 
 if 'date_changed' not in st.session_state:
     st.session_state['date_changed'] = False
 
 def handle_date_change():
+    st.session_state.data_agendamento = st.session_state.data_input_widget  # Atualizar com o objeto date
     verificar_disponibilidade.clear()
 
 data_agendamento_obj = st.date_input("Data para visualizar disponibilidade", min_value=datetime.today(), key="data_input_widget", on_change=handle_date_change)
-data_para_tabela = st.session_state.get("data_input_widget", datetime.today()).strftime('%d/%m/%Y')
+data_para_tabela = data_agendamento_obj.strftime('%d/%m/%Y')  # Formatar o objeto date
 
 # Tabela de Disponibilidade (Renderizada com a data do session state) FORA do formulário
 st.subheader("Disponibilidade dos Barbeiros")
@@ -250,7 +251,7 @@ for barbeiro in barbeiros:
 html_table += '</tr>'
 
 # Gerar horários base dinamicamente
-data_obj_tabela = datetime.strptime(data_para_tabela, '%d/%m/%Y')
+data_obj_tabela = data_agendamento_obj # Usar o objeto date diretamente
 dia_da_semana_tabela = data_obj_tabela.weekday()  # 0 = segunda, 6 = domingo
 horarios_tabela = []
 for h in range(8, 20):
@@ -258,16 +259,44 @@ for h in range(8, 20):
         horario_str = f"{h:02d}:{m:02d}"
         if dia_da_semana_tabela == 5:  # Sábado
             horarios_tabela.append(horario_str)
-        elif h < 12 or h >= 14:  # Outros dias, bloquear almoço
+        elif dia_da_semana_tabela < 5:  # Segunda a Sexta
             horarios_tabela.append(horario_str)
 
 for horario in horarios_tabela:
     html_table += f'<tr><td style="padding: 8px; border: 1px solid #ddd;">{horario}</td>'
     for barbeiro in barbeiros:
         disponivel = verificar_disponibilidade(data_para_tabela, horario, barbeiro)
-        status = "Disponível" if disponivel else "Ocupado"
-        bg_color = "forestgreen" if disponivel else "firebrick"
-        color_text = "white" if disponivel else "white"
+        status = "Disponível"
+        bg_color = "forestgreen"
+        color_text = "white"
+
+        hora_int = int(horario.split(':')[0])
+        minuto_int = int(horario.split(':')[1])
+
+        if dia_da_semana_tabela < 5:  # Segunda a Sexta
+            if (hora_int == 11 and minuto_int >= 0 and hora_int < 12 and barbeiro != "Lucas Borges") or \
+               (hora_int == 12 and minuto_int >= 0 and hora_int < 13) or \
+               (hora_int == 13 and minuto_int >= 0 and hora_int < 14 and barbeiro != "Aluizio"):
+                status = "Indisponível"
+                bg_color = "orange"
+            elif (hora_int == 11 and minuto_int >= 0 and hora_int < 12 and barbeiro == "Lucas Borges"):
+                status = "Disponível" if verificar_disponibilidade(data_para_tabela, horario, barbeiro) else "Ocupado"
+                bg_color = "forestgreen" if verificar_disponibilidade(data_para_tabela, horario, barbeiro) else "firebrick"
+                color_text = "white"
+            elif (hora_int == 13 and minuto_int >= 0 and hora_int < 14 and barbeiro == "Aluizio"):
+                status = "Disponível" if verificar_disponibilidade(data_para_tabela, horario, barbeiro) else "Ocupado"
+                bg_color = "forestgreen" if verificar_disponibilidade(data_para_tabela, horario, barbeiro) else "firebrick"
+                color_text = "white"
+            else:
+                status = "Disponível" if verificar_disponibilidade(data_para_tabela, horario, barbeiro) else "Ocupado"
+                bg_color = "forestgreen" if verificar_disponibilidade(data_para_tabela, horario, barbeiro) else "firebrick"
+                color_text = "white"
+
+        elif dia_da_semana_tabela == 5: # Sábado - Manter a lógica original
+            status = "Disponível" if verificar_disponibilidade(data_para_tabela, horario, barbeiro) else "Ocupado"
+            bg_color = "forestgreen" if verificar_disponibilidade(data_para_tabela, horario, barbeiro) else "firebrick"
+            color_text = "white"
+
         # Adicionando uma altura fixa para as células de dados
         html_table += f'<td style="padding: 8px; border: 1px solid #ddd; background-color: {bg_color}; text-align: center; color: {color_text}; height: 30px;">{status}</td>'
 html_table += '</tr>'
@@ -282,21 +311,45 @@ with st.form("agendar_form"):
     telefone = st.text_input("Telefone")
 
     # Usar o valor do session state para a data dentro do formulário
-    data_agendamento = st.session_state.data_agendamento
+    data_agendamento = st.session_state.data_agendamento.strftime('%d/%m/%Y') # Formatar para string aqui
 
     dia_da_semana = datetime.strptime(data_agendamento, '%d/%m/%Y').weekday()
     if dia_da_semana < 5:
         horarios_base_agendamento = []
         for h in range(8, 20):
             for m in (0, 30):
-                if h < 12 or h >= 14:
+                if h < 11 or h >= 14:
+                    horarios_base_agendamento.append(f"{h:02d}:{m:02d}")
+                elif h == 11 and m == 0:
+                    horarios_base_agendamento.append(f"{h:02d}:{m:02d}")
+                elif h == 13 and m == 0:
                     horarios_base_agendamento.append(f"{h:02d}:{m:02d}")
     else:
         horarios_base_agendamento = [f"{h:02d}:{m:02d}" for h in range(8, 20) for m in (0, 30)]
 
     barbeiro_selecionado = st.selectbox("Escolha o barbeiro", barbeiros + ["Sem preferência"])
 
-    horario_agendamento = st.selectbox("Horário", horarios_base_agendamento)  # Mantenha esta linha
+    # Filtrar horários de almoço com base no barbeiro selecionado
+    horarios_filtrados = []
+    for horario in horarios_base_agendamento:
+        hora_int = int(horario.split(':')[0])
+        minuto_int = int(horario.split(':')[1])
+        if dia_da_semana < 5:
+            if barbeiro_selecionado == "Lucas Borges":
+                if not (hora_int == 12):
+                    horarios_filtrados.append(horario)
+            elif barbeiro_selecionado == "Aluizio":
+                if not (hora_int == 12):
+                    horarios_filtrados.append(horario)
+            elif barbeiro_selecionado == "Sem preferência":
+                if not (hora_int == 12):
+                    horarios_filtrados.append(horario)
+            else: # Para horários antes e depois do almoço
+                horarios_filtrados.append(horario)
+        else:
+            horarios_filtrados.append(horario)
+
+    horario_agendamento = st.selectbox("Horário", horarios_filtrados)  # Mantenha esta linha
 
     servicos_selecionados = st.multiselect("Serviços", list(servicos.keys()))
 
@@ -310,6 +363,32 @@ with st.form("agendar_form"):
 
 if submitted:
     with st.spinner("Processando agendamento..."):
+        data_obj_agendamento = datetime.strptime(data_agendamento, '%d/%m/%Y')
+        dia_da_semana_agendamento = data_obj_agendamento.weekday()
+        hora_agendamento_int = int(horario_agendamento.split(':')[0])
+        minuto_agendamento_int = int(horario_agendamento.split(':')[1])
+
+        if dia_da_semana_agendamento < 5:  # Segunda a Sexta
+            if (hora_agendamento_int == 11 and minuto_agendamento_int >= 0 and hora_agendamento_int < 12 and barbeiro_selecionado != "Lucas Borges") or \
+               (hora_agendamento_int == 12 and minuto_agendamento_int >= 0 and hora_agendamento_int < 13) or \
+               (hora_agendamento_int == 13 and minuto_agendamento_int >= 0 and hora_agendamento_int < 14 and barbeiro_selecionado != "Aluizio"):
+                st.error("Barbeiro em horário de almoço")
+                st.stop()  # Impede que o restante do código de agendamento seja executado
+            elif barbeiro_selecionado == "Sem preferência":
+                lucas_indisponivel = (hora_agendamento_int == 11 and minuto_agendamento_int >= 0 and hora_agendamento_int < 12) or \
+                                     (hora_agendamento_int == 12 and minuto_agendamento_int >= 0 and hora_agendamento_int < 13) or \
+                                     (hora_agendamento_int == 13 and minuto_agendamento_int >= 0 and hora_agendamento_int < 14 and barbeiros[0] != "Aluizio") # Lucas não é Aluizio
+
+                aluizio_indisponivel = (hora_agendamento_int == 11 and minuto_agendamento_int >= 0 and hora_agendamento_int < 12 and barbeiros[1] != "Lucas Borges") or \
+                                       (hora_agendamento_int == 12 and minuto_agendamento_int >= 0 and hora_agendamento_int < 13) or \
+                                       (hora_agendamento_int == 13 and minuto_agendamento_int >= 0 and hora_agendamento_int < 14)
+
+                if (hora_agendamento_int == 11 and minuto_agendamento_int >= 0 and hora_agendamento_int < 12 and barbeiros[0] != "Lucas Borges" and barbeiros[1] != "Lucas Borges") or \
+                   (hora_agendamento_int == 12 and minuto_agendamento_int >= 0 and hora_agendamento_int < 13) or \
+                   (hora_agendamento_int == 13 and minuto_agendamento_int >= 0 and hora_agendamento_int < 14 and barbeiros[1] != "Aluizio" and barbeiros[0] != "Aluizio"):
+                    st.error("Barbeiros em horário de almoço")
+                    st.stop()
+
         if nome and telefone and servicos_selecionados:
             if "Sem preferência" in barbeiro_selecionado:
                 # Verifica se ambos os barbeiros estão ocupados
@@ -429,15 +508,16 @@ if submitted:
 with st.form("cancelar_form"):
     st.subheader("Cancelar Agendamento")
     telefone_cancelar = st.text_input("Telefone para Cancelamento")
-    data_cancelar = st.date_input("Data do Agendamento", min_value=datetime.today()).strftime('%d/%m/%Y')
-    horario_cancelar = st.selectbox("Horário do Agendamento", horarios_base_agendamento) # Usar a lista correta aqui
-    barbeiro_cancelar = st.selectbox("Barbeiro do Agendamento", barbeiros) # Adicionando a seleção do barbeiro
+    data_cancelar = st.date_input("Data do Agendamento", min_value=datetime.today())
+    horario_cancelar = st.selectbox("Horário do Agendamento", horarios_base_agendamento)
+    barbeiro_cancelar = st.selectbox("Barbeiro do Agendamento", barbeiros)
     submitted_cancelar = st.form_submit_button("Cancelar Agendamento")
     if submitted_cancelar:
         with st.spinner("Processando cancelamento..."):
-            cancelado = cancelar_agendamento(data_cancelar, horario_cancelar, telefone_cancelar, barbeiro_cancelar)
+            data_cancelar_str = data_cancelar.strftime('%d/%m/%Y')
+            cancelado = cancelar_agendamento(data_cancelar_str, horario_cancelar, telefone_cancelar, barbeiro_cancelar)
 
-        if cancelado:
+        if cancelado is not None:
             resumo_cancelamento = f"""
             Nome: {cancelado['nome']}
             Telefone: {cancelado['telefone']}
@@ -450,10 +530,8 @@ with st.form("cancelar_form"):
             verificar_disponibilidade.clear()
             st.success("Agendamento cancelado com sucesso!")
             st.info("Resumo do cancelamento:\n" + resumo_cancelamento)
-            # Verificar se o horário seguinte estava bloqueado e desbloqueá-lo
             if "Barba" in cancelado['servicos'] and any(corte in cancelado['servicos'] for corte in ["Tradicional", "Social", "Degradê", "Navalhado"]):
                 horario_seguinte = (datetime.strptime(cancelado['horario'], '%H:%M') + timedelta(minutes=30)).strftime('%H:%M')
-                # Adicione estas linhas temporariamente para verificar os valores
                 desbloquear_horario(cancelado['data'], horario_seguinte, cancelado['barbeiro'])
                 st.info("O horário seguinte foi desbloqueado.")
             time.sleep(5)
