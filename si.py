@@ -257,10 +257,7 @@ horarios_tabela = []
 for h in range(8, 20):
     for m in (0, 30):
         horario_str = f"{h:02d}:{m:02d}"
-        if dia_da_semana_tabela == 5:  # Sábado
-            horarios_tabela.append(horario_str)
-        elif dia_da_semana_tabela < 5:  # Segunda a Sexta
-            horarios_tabela.append(horario_str)
+        horarios_tabela.append(horario_str)
 
 for horario in horarios_tabela:
     html_table += f'<tr><td style="padding: 8px; border: 1px solid #ddd;">{horario}</td>'
@@ -313,30 +310,17 @@ with st.form("agendar_form"):
     # Usar o valor do session state para a data dentro do formulário
     data_agendamento = st.session_state.data_agendamento.strftime('%d/%m/%Y') # Formatar para string aqui
 
-    dia_da_semana = datetime.strptime(data_agendamento, '%d/%m/%Y').weekday()
-    if dia_da_semana < 5:
-        horarios_base_agendamento = []
-        for h in range(8, 20):
-            for m in (0, 30):
-                if h < 11 or h >= 14:
-                    horarios_base_agendamento.append(f"{h:02d}:{m:02d}")
-                elif h == 11 and m == 0:
-                    horarios_base_agendamento.append(f"{h:02d}:{m:02d}")
-                elif h == 13 and m == 0:
-                    horarios_base_agendamento.append(f"{h:02d}:{m:02d}")
-                elif h == 13 and m == 30: # Adicionando o horário das 13:30
-                    horarios_base_agendamento.append(f"{h:02d}:{m:02d}")
-    else:
-        horarios_base_agendamento = [f"{h:02d}:{m:02d}" for h in range(8, 20) for m in (0, 30)]
+    # Geração da lista de horários completa para agendamento
+    horarios_base_agendamento = [f"{h:02d}:{m:02d}" for h in range(8, 20) for m in (0, 30)]
 
     barbeiro_selecionado = st.selectbox("Escolha o barbeiro", barbeiros + ["Sem preferência"])
 
-    # Filtrar horários de almoço com base no barbeiro selecionado
+    # Filtrar horários de almoço com base no barbeiro selecionado (esta lógica permanece para a validação)
     horarios_filtrados = []
     for horario in horarios_base_agendamento:
         hora_int = int(horario.split(':')[0])
         minuto_int = int(horario.split(':')[1])
-        if dia_da_semana < 5:
+        if int(datetime.strptime(data_agendamento, '%d/%m/%Y').strftime('%w')) != 0: # Evitar o domingo (se necessário)
             if barbeiro_selecionado == "Lucas Borges":
                 if not (hora_int == 12):
                     horarios_filtrados.append(horario)
@@ -511,22 +495,8 @@ with st.form("cancelar_form"):
     st.subheader("Cancelar Agendamento")
     telefone_cancelar = st.text_input("Telefone para Cancelamento")
     data_cancelar = st.date_input("Data do Agendamento", min_value=datetime.today())
-    # A lista de horários para cancelamento agora usará a lista completa
-    dia_da_semana_cancelar = data_cancelar.weekday()
-    if dia_da_semana_cancelar < 5:
-        horarios_base_cancelamento = []
-        for h in range(8, 20):
-            for m in (0, 30):
-                if h < 11 or h >= 14:
-                    horarios_base_cancelamento.append(f"{h:02d}:{m:02d}")
-                elif h == 11 and m == 0:
-                    horarios_base_cancelamento.append(f"{h:02d}:{m:02d}")
-                elif h == 13 and m == 0:
-                    horarios_base_cancelamento.append(f"{h:02d}:{m:02d}")
-                elif h == 13 and m == 30: # Adicionando o horário das 13:30
-                    horarios_base_cancelamento.append(f"{h:02d}:{m:02d}")
-    else:
-        horarios_base_cancelamento = [f"{h:02d}:{m:02d}" for h in range(8, 20) for m in (0, 30)]
+    # Geração da lista de horários completa para cancelamento
+    horarios_base_cancelamento = [f"{h:02d}:{m:02d}" for h in range(8, 20) for m in (0, 30)]
     horario_cancelar = st.selectbox("Horário do Agendamento", horarios_base_cancelamento)
     barbeiro_cancelar = st.selectbox("Barbeiro do Agendamento", barbeiros)
     submitted_cancelar = st.form_submit_button("Cancelar Agendamento")
