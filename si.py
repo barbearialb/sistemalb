@@ -322,14 +322,11 @@ with st.form("agendar_form"):
         minuto_int = int(horario.split(':')[1])
         if int(datetime.strptime(data_agendamento, '%d/%m/%Y').strftime('%w')) != 0: # Evitar o domingo (se necessário)
             if barbeiro_selecionado == "Lucas Borges":
-                if not (hora_int == 12):
-                    horarios_filtrados.append(horario)
+                horarios_filtrados.append(horario)
             elif barbeiro_selecionado == "Aluizio":
-                if not (hora_int == 12):
-                    horarios_filtrados.append(horario)
+                horarios_filtrados.append(horario)
             elif barbeiro_selecionado == "Sem preferência":
-                if not (hora_int == 12):
-                    horarios_filtrados.append(horario)
+                horarios_filtrados.append(horario)
             else: # Para horários antes e depois do almoço
                 horarios_filtrados.append(horario)
         else:
