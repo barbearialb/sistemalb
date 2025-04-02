@@ -326,16 +326,7 @@ with st.form("agendar_form"):
             if dia_da_semana == 5:  # Sábado
                 horarios_filtrados.append(horario)  # Inclui todos os horários, incluindo 12h e 12h30
             else:  # Segunda a sexta
-                if barbeiro_selecionado == "Lucas Borges":
-                    if not (hora_int == 12):
-                        horarios_filtrados.append(horario)
-                elif barbeiro_selecionado == "Aluizio":
-                    if not (hora_int == 12):
-                        horarios_filtrados.append(horario)
-                elif barbeiro_selecionado == "Sem preferência":
-                    if not (hora_int == 12):
-                        horarios_filtrados.append(horario)
-                else:
+                if not (hora_int == 12):  # Exclui 12h e 12h30 de segunda a sexta
                     horarios_filtrados.append(horario)
         else:
             horarios_filtrados.append(horario)
@@ -513,7 +504,8 @@ with st.form("cancelar_form"):
             if dia_da_semana == 5:  # Sábado
                 horarios_filtrados_cancelamento.append(horario)  # Inclui todos os horários, incluindo 12h e 12h30
             else:  # Segunda a sexta
-                horarios_filtrados_cancelamento.append(horario)
+                if not (hora_int == 12):  # Exclui 12h e 12h30 de segunda a sexta
+                    horarios_filtrados_cancelamento.append(horario)
         else:
             horarios_filtrados_cancelamento.append(horario)
     horario_cancelar = st.selectbox("Horário do Agendamento", horarios_filtrados_cancelamento)
