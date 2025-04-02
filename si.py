@@ -318,18 +318,7 @@ with st.form("agendar_form"):
     # Filtrar horários de almoço com base no barbeiro selecionado
     horarios_filtrados = []
     for horario in horarios_base_agendamento:
-        hora_int = int(horario.split(':')[0])
-        minuto_int = int(horario.split(':')[1])
-        dia_da_semana = int(datetime.strptime(data_agendamento, '%d/%m/%Y').strftime('%w'))
-
-        if dia_da_semana != 0:  # Evitar o domingo
-            if dia_da_semana == 5:  # Sábado
-                horarios_filtrados.append(horario)  # Inclui todos os horários, incluindo 12h e 12h30
-            else:  # Segunda a sexta
-                if not (hora_int == 12):  # Exclui 12h e 12h30 de segunda a sexta
-                    horarios_filtrados.append(horario)
-        else:
-            horarios_filtrados.append(horario)
+        horarios_filtrados.append(horario)
 
     horario_agendamento = st.selectbox("Horário", horarios_filtrados)  # Mantenha esta linha
 
@@ -348,7 +337,7 @@ if submitted:
         data_obj_agendamento = datetime.strptime(data_agendamento, '%d/%m/%Y')
         dia_da_semana_agendamento = data_obj_agendamento.weekday()
         hora_agendamento_int = int(horario_agendamento.split(':')[0])
-        minuto_agendamento_int = int(horario_agendamento.split(':')[1])
+        minuto_agendamento_int = int(horario.split(':')[1])
 
         if dia_da_semana_agendamento < 5:  # Segunda a Sexta
             if (hora_agendamento_int == 11 and minuto_agendamento_int >= 0 and hora_agendamento_int < 12 and barbeiro_selecionado != "Lucas Borges") or \
@@ -496,18 +485,7 @@ with st.form("cancelar_form"):
     # Filtrar horários de almoço com base no dia da semana
     horarios_filtrados_cancelamento = []
     for horario in horarios_base_cancelamento:
-        hora_int = int(horario.split(':')[0])
-        minuto_int = int(horario.split(':')[1])
-        dia_da_semana = int(datetime.strptime(data_cancelar.strftime('%d/%m/%Y'), '%d/%m/%Y').strftime('%w'))
-
-        if dia_da_semana != 0:  # Evitar o domingo
-            if dia_da_semana == 5:  # Sábado
-                horarios_filtrados_cancelamento.append(horario)  # Inclui todos os horários, incluindo 12h e 12h30
-            else:  # Segunda a sexta
-                if not (hora_int == 12):  # Exclui 12h e 12h30 de segunda a sexta
-                    horarios_filtrados_cancelamento.append(horario)
-        else:
-            horarios_filtrados_cancelamento.append(horario)
+        horarios_filtrados_cancelamento.append(horario)
     horario_cancelar = st.selectbox("Horário do Agendamento", horarios_filtrados_cancelamento)
     barbeiro_cancelar = st.selectbox("Barbeiro do Agendamento", barbeiros)
     submitted_cancelar = st.form_submit_button("Cancelar Agendamento")
