@@ -70,6 +70,8 @@ servicos = {
     "Navalhado": 25,
     "Pezim": 7,
     "Barba": 15,
+    "Abordagem de visagismo": 45,
+    "Consultoria de visagismo": 65,
 }
 
 barbeiros = ["Lucas Borges", "Aluizio"]
@@ -142,7 +144,7 @@ def cancelar_agendamento(data, horario, telefone, barbeiro):
                     st.error("Formato de data inválido no Firestore")
                     return None
             else:
-                st.error("Formato de data inválido no Firestore")
+                st.error("Formato de data inválida no Firestore")
                 return None
 
             agendamento_ref.delete()
@@ -361,6 +363,12 @@ if submitted:
                     st.stop()
 
         if nome and telefone and servicos_selecionados:
+            # Verifica se um dos serviços de visagismo foi selecionado e se o barbeiro é Lucas Borges
+            servicos_visagismo = ["Abordagem de visagismo", "Consultoria de visagismo"]
+            if any(servico in servicos_selecionados for servico in servicos_visagismo) and barbeiro_selecionado != "Lucas Borges":
+                st.error("Apenas Lucas Borges realiza atendimentos de visagismo.")
+                st.stop()
+
             if "Sem preferência" in barbeiro_selecionado:
                 # Verifica se ambos os barbeiros estão ocupados
                 if not verificar_disponibilidade(data_agendamento, horario_agendamento, barbeiros[0]) and not verificar_disponibilidade(data_agendamento, horario_agendamento, barbeiros[1]):
