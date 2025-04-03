@@ -491,13 +491,19 @@ with st.form("cancelar_form"):
     st.subheader("Cancelar Agendamento")
     telefone_cancelar = st.text_input("Telefone para Cancelamento")
     data_cancelar = st.date_input("Data do Agendamento", min_value=datetime.today())
+
     # Geração da lista de horários completa para cancelamento
     horarios_base_cancelamento = [f"{h:02d}:{m:02d}" for h in range(8, 20) for m in (0, 30)]
-    # Filtrar horários de almoço com base no dia da semana
+
+    # Criar a lista de horários para o dropdown de cancelamento
     horarios_filtrados_cancelamento = []
     for horario in horarios_base_cancelamento:
-        horarios_filtrados.append(horario)
+        # CORREÇÃO: Adicionar o horário à lista CORRETA
+        horarios_filtrados_cancelamento.append(horario)
+
+    # Agora a lista não está mais vazia
     horario_cancelar = st.selectbox("Horário do Agendamento", horarios_filtrados_cancelamento)
+
     barbeiro_cancelar = st.selectbox("Barbeiro do Agendamento", barbeiros)
     submitted_cancelar = st.form_submit_button("Cancelar Agendamento")
     if submitted_cancelar:
