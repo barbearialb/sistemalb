@@ -342,7 +342,7 @@ if submitted:
         data_obj_agendamento = datetime.strptime(data_agendamento, '%d/%m/%Y')
         dia_da_semana_agendamento = data_obj_agendamento.weekday()
         hora_agendamento_int = int(horario_agendamento.split(':')[0])
-        minuto_agendamento_int = int(horario.split(':')[1])
+        minuto_agendamento_int = int(horario_agendamento.split(':')[1])
 
         if dia_da_semana_agendamento < 5:  # Segunda a Sexta
             if (hora_agendamento_int == 11 and minuto_agendamento_int >= 0 and hora_agendamento_int < 12 and barbeiro_selecionado != "Lucas Borges") or \
