@@ -74,6 +74,9 @@ servicos = {
     "Consultoria de visagismo": 65,
 }
 
+# Lista de serviços para exibição
+lista_servicos = list(servicos.keys())
+
 barbeiros = ["Lucas Borges", "Aluizio"]
 
 # Função para enviar e-mail
@@ -324,7 +327,7 @@ with st.form("agendar_form"):
 
     horario_agendamento = st.selectbox("Horário", horarios_filtrados)  # Mantenha esta linha
 
-    servicos_selecionados = st.multiselect("Serviços", list(servicos.keys()))
+    servicos_selecionados = st.multiselect("Serviços", lista_servicos)
 
     # Exibir os preços com o símbolo R$
     servicos_com_preco = {servico: f"R$ {preco}" for servico, preco in servicos.items()}
@@ -493,7 +496,7 @@ with st.form("cancelar_form"):
     # Filtrar horários de almoço com base no dia da semana
     horarios_filtrados_cancelamento = []
     for horario in horarios_base_cancelamento:
-        horarios_filtrados_cancelamento.append(horario)
+        horarios_filtrados.append(horario)
     horario_cancelar = st.selectbox("Horário do Agendamento", horarios_filtrados_cancelamento)
     barbeiro_cancelar = st.selectbox("Barbeiro do Agendamento", barbeiros)
     submitted_cancelar = st.form_submit_button("Cancelar Agendamento")
