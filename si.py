@@ -67,6 +67,7 @@ servicos = {
     "Tradicional": 15,
     "Social": 18,
     "Degradê": 23,
+    "Pezim": 7,
     "Navalhado": 25,
     "Barba": 15,
     "Abordagem de visagismo": 45,
