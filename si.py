@@ -68,7 +68,6 @@ servicos = {
     "Social": 18,
     "Degradê": 23,
     "Navalhado": 25,
-    "Pezim": 7,
     "Barba": 15,
     "Abordagem de visagismo": 45,
     "Consultoria de visagismo": 65,
