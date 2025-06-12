@@ -332,7 +332,17 @@ html_table += '</tr>'
 # Gerar horários base dinamicamente
 dia_da_semana_tabela = data_obj_tabela.weekday()  # 0 = segunda, 6 = domingo
 horarios_tabela = []
-for h in range(8, 20):
+
+# Verifica se a data está entre 11/07/2025 e 20/07/2025
+inicio_extendido = datetime(2025, 7, 11).date()
+fim_extendido = datetime(2025, 7, 20).date()
+
+if inicio_extendido <= data_obj_tabela <= fim_extendido:
+    hora_inicial = 7
+else:
+    hora_inicial = 8
+
+for h in range(hora_inicial, 20):  # até 19:30
     for m in (0, 30):
         horario_str = f"{h:02d}:{m:02d}"
         horarios_tabela.append(horario_str)
