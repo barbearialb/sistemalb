@@ -423,10 +423,7 @@ with st.form("agendar_form"):
     data_obj_agendamento_form = st.session_state.data_agendamento # Objeto date para validações
 
     # Ajustar faixa de horário para o formulário com base na data
-    inicio_extensao = datetime(2025, 7, 11).date()
-    fim_extensao = datetime(2025, 7, 20).date()
     hora_inicial_form = 7 if inicio_extensao <= data_obj_agendamento_form <= fim_extensao else 8
-
     horarios_base_agendamento = [f"{h:02d}:{m:02d}" for h in range(hora_inicial_form, 20) for m in (0, 30)]
 
 
