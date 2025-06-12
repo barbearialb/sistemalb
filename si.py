@@ -418,8 +418,13 @@ with st.form("agendar_form"):
     data_agendamento_str_form = st.session_state.data_agendamento.strftime('%d/%m/%Y') # String para salvar
     data_obj_agendamento_form = st.session_state.data_agendamento # Objeto date para validações
 
-    # Geração da lista de horários completa para agendamento
-    horarios_base_agendamento = [f"{h:02d}:{m:02d}" for h in range(8, 20) for m in (0, 30)]
+    # Ajustar faixa de horário para o formulário com base na data
+    inicio_extensao = datetime(2025, 7, 11).date()
+    fim_extensao = datetime(2025, 7, 20).date()
+    hora_inicial_form = 7 if inicio_extensao <= data_obj_agendamento_form <= fim_extensao else 8
+
+    horarios_base_agendamento = [f"{h:02d}:{m:02d}" for h in range(hora_inicial_form, 20) for m in (0, 30)]
+
 
     barbeiro_selecionado = st.selectbox("Escolha o barbeiro", barbeiros + ["Sem preferência"])
 
