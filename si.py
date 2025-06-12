@@ -321,6 +321,10 @@ if data_agendamento_obj != st.session_state.data_agendamento:
 data_para_tabela = st.session_state.data_agendamento.strftime('%d/%m/%Y')  # Formatar o objeto date para string DD/MM/YYYY
 data_obj_tabela = st.session_state.data_agendamento # Mantém como objeto date para pegar weekday
 
+# Definir intervalo de horário estendido entre 11 e 20 de julho
+inicio_extensao = datetime(2025, 7, 11).date()
+fim_extensao = datetime(2025, 7, 20).date()
+
 # Tabela de Disponibilidade (Renderizada com a data do session state) FORA do formulário
 st.subheader("Disponibilidade dos Barbeiros")
 
