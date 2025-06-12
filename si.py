@@ -354,7 +354,7 @@ for horario in horarios_tabela:
             #color_text = "black"
         # <<< FIM MODIFICAÇÃO 1 >>>
 
-        elif dia_da_semana_tabela < 5:  # Segunda a Sexta
+        If dia_da_semana_tabela < 5:  # Segunda a Sexta
             # Lógica de Almoço (Simplificada para clareza)
             almoco_lucas = (hora_int == 12 or hora_int ==13) # 12:00 e 12:30
             almoco_aluizio = (hora_int == 11 or hora_int == 12) # 11:00 e 11:30
