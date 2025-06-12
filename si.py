@@ -382,6 +382,11 @@ for horario in horarios_tabela:
             status = "Disponível" if disponivel else "Ocupado"
             bg_color = "forestgreen" if disponivel else "firebrick"
             color_text = "white"
+        else:  # Domingo (liberado agora)
+            disponivel = verificar_disponibilidade(data_para_tabela, horario, barbeiro)
+            status = "Disponível" if disponivel else "Ocupado"
+            bg_color = "forestgreen" if disponivel else "firebrick"
+            color_text = "white"
 
         # Adicionando a célula formatada
         html_table += f'<td style="padding: 8px; border: 1px solid #ddd; background-color: {bg_color}; text-align: center; color: {color_text}; height: 30px;">{status}</td>'
