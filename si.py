@@ -587,7 +587,8 @@ with st.form("cancelar_form"):
     data_cancelar = st.date_input("Data do Agendamento", min_value=datetime.today().date()) # Usar date()
 
     # Geração da lista de horários completa para cancelamento
-    horarios_base_cancelamento = [f"{h:02d}:{m:02d}" for h in range(8, 20) for m in (0, 30)]
+    hora_inicial_cancelamento = 7 if inicio_extensao <= data_cancelar <= fim_extensao else 8
+    horarios_base_cancelamento = [f"{h:02d}:{m:02d}" for h in range(hora_inicial_cancelamento, 20) for m in (0, 30)]
 
     horario_cancelar = st.selectbox("Horário do Agendamento", horarios_base_cancelamento) # Usa a lista completa
 
