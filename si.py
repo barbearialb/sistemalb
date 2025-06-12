@@ -382,7 +382,7 @@ for horario in horarios_tabela:
             status = "Disponível" if disponivel else "Ocupado"
             bg_color = "forestgreen" if disponivel else "firebrick"
             color_text = "white"
-        else:  # Domingo (liberado agora)
+        elif dia_da_semana_tabela == 6:  # Domingo
             disponivel = verificar_disponibilidade(data_para_tabela, horario, barbeiro)
             status = "Disponível" if disponivel else "Ocupado"
             bg_color = "forestgreen" if disponivel else "firebrick"
