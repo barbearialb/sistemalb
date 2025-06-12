@@ -433,8 +433,8 @@ if submitted:
 
         # <<< MODIFICAÇÃO 2: Verificar se é Domingo ANTES de tudo >>>
         #if dia_da_semana_agendamento == 6:
-            st.error("Desculpe, não realizamos agendamentos aos domingos.")
-            st.stop() # Interrompe a execução do agendamento
+            #st.error("Desculpe, não realizamos agendamentos aos domingos.")
+            #st.stop() # Interrompe a execução do agendamento
         # <<< FIM MODIFICAÇÃO 2 >>>
 
         # Validações básicas de preenchimento
