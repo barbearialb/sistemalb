@@ -348,6 +348,10 @@ for horario in horarios_tabela:
         minuto_int = int(horario.split(':')[1])
 
         # <<< MODIFICAÇÃO 1: Tratamento para Domingo >>>
+        if dia_da_semana_tabela == 6: # Se for Domingo
+            status = "Descanso"
+            bg_color = "#A9A9A9" # Cinza escuro (DarkGray)
+            color_text = "black"
         # <<< FIM MODIFICAÇÃO 1 >>>
 
         elif dia_da_semana_tabela < 5:  # Segunda a Sexta
@@ -428,7 +432,9 @@ if submitted:
         dia_da_semana_agendamento = data_obj_agendamento_form.weekday() # 0=Segunda, 6=Domingo
 
         # <<< MODIFICAÇÃO 2: Verificar se é Domingo ANTES de tudo >>>
-        # Interrompe a execução do agendamento
+        if dia_da_semana_agendamento == 6:
+            st.error("Desculpe, não realizamos agendamentos aos domingos.")
+            st.stop() # Interrompe a execução do agendamento
         # <<< FIM MODIFICAÇÃO 2 >>>
 
         # Validações básicas de preenchimento
