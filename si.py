@@ -321,10 +321,6 @@ if data_agendamento_obj != st.session_state.data_agendamento:
 data_para_tabela = st.session_state.data_agendamento.strftime('%d/%m/%Y')  # Formatar o objeto date para string DD/MM/YYYY
 data_obj_tabela = st.session_state.data_agendamento # Mantém como objeto date para pegar weekday
 
-# Definir intervalo de horário estendido entre 11 e 20 de julho
-inicio_extensao = datetime(2025, 7, 11).date()
-fim_extensao = datetime(2025, 7, 20).date()
-
 # Tabela de Disponibilidade (Renderizada com a data do session state) FORA do formulário
 st.subheader("Disponibilidade dos Barbeiros")
 
@@ -336,17 +332,7 @@ html_table += '</tr>'
 # Gerar horários base dinamicamente
 dia_da_semana_tabela = data_obj_tabela.weekday()  # 0 = segunda, 6 = domingo
 horarios_tabela = []
-
-# Verifica se a data está entre 11/07/2025 e 20/07/2025
-inicio_extendido = datetime(2025, 7, 11).date()
-fim_extendido = datetime(2025, 7, 20).date()
-
-if inicio_extendido <= data_obj_tabela <= fim_extendido:
-    hora_inicial = 7
-else:
-    hora_inicial = 8
-
-for h in range(hora_inicial, 20):  # até 19:30
+for h in range(8, 20):
     for m in (0, 30):
         horario_str = f"{h:02d}:{m:02d}"
         horarios_tabela.append(horario_str)
@@ -362,13 +348,13 @@ for horario in horarios_tabela:
         minuto_int = int(horario.split(':')[1])
 
         # <<< MODIFICAÇÃO 1: Tratamento para Domingo >>>
-        #if dia_da_semana_tabela == 6: # Se for Domingo
-            #status = "Descanso"
-            #bg_color = "#A9A9A9" # Cinza escuro (DarkGray)
-            #color_text = "black"
+        if dia_da_semana_tabela == 6: # Se for Domingo
+            status = "Descanso"
+            bg_color = "#A9A9A9" # Cinza escuro (DarkGray)
+            color_text = "black"
         # <<< FIM MODIFICAÇÃO 1 >>>
 
-        if dia_da_semana_tabela < 5:  # Segunda a Sexta
+        elif dia_da_semana_tabela < 5:  # Segunda a Sexta
             # Lógica de Almoço (Simplificada para clareza)
             almoco_lucas = (hora_int == 12 or hora_int ==13) # 12:00 e 12:30
             almoco_aluizio = (hora_int == 11 or hora_int == 12) # 11:00 e 11:30
@@ -396,11 +382,6 @@ for horario in horarios_tabela:
             status = "Disponível" if disponivel else "Ocupado"
             bg_color = "forestgreen" if disponivel else "firebrick"
             color_text = "white"
-        elif dia_da_semana_tabela == 6:  # Domingo
-            disponivel = verificar_disponibilidade(data_para_tabela, horario, barbeiro)
-            status = "Disponível" if disponivel else "Ocupado"
-            bg_color = "forestgreen" if disponivel else "firebrick"
-            color_text = "white"
 
         # Adicionando a célula formatada
         html_table += f'<td style="padding: 8px; border: 1px solid #ddd; background-color: {bg_color}; text-align: center; color: {color_text}; height: 30px;">{status}</td>'
@@ -422,10 +403,8 @@ with st.form("agendar_form"):
     data_agendamento_str_form = st.session_state.data_agendamento.strftime('%d/%m/%Y') # String para salvar
     data_obj_agendamento_form = st.session_state.data_agendamento # Objeto date para validações
 
-    # Ajustar faixa de horário para o formulário com base na data
-    hora_inicial_form = 7 if inicio_extensao <= data_obj_agendamento_form <= fim_extensao else 8
-    horarios_base_agendamento = [f"{h:02d}:{m:02d}" for h in range(hora_inicial_form, 20) for m in (0, 30)]
-
+    # Geração da lista de horários completa para agendamento
+    horarios_base_agendamento = [f"{h:02d}:{m:02d}" for h in range(8, 20) for m in (0, 30)]
 
     barbeiro_selecionado = st.selectbox("Escolha o barbeiro", barbeiros + ["Sem preferência"])
 
@@ -453,9 +432,9 @@ if submitted:
         dia_da_semana_agendamento = data_obj_agendamento_form.weekday() # 0=Segunda, 6=Domingo
 
         # <<< MODIFICAÇÃO 2: Verificar se é Domingo ANTES de tudo >>>
-        #if dia_da_semana_agendamento == 6:
-            #st.error("Desculpe, não realizamos agendamentos aos domingos.")
-            #st.stop() # Interrompe a execução do agendamento
+        if dia_da_semana_agendamento == 6:
+            st.error("Desculpe, não realizamos agendamentos aos domingos.")
+            st.stop() # Interrompe a execução do agendamento
         # <<< FIM MODIFICAÇÃO 2 >>>
 
         # Validações básicas de preenchimento
@@ -588,8 +567,7 @@ with st.form("cancelar_form"):
     data_cancelar = st.date_input("Data do Agendamento", min_value=datetime.today().date()) # Usar date()
 
     # Geração da lista de horários completa para cancelamento
-    hora_inicial_cancelamento = 7 if inicio_extensao <= data_cancelar <= fim_extensao else 8
-    horarios_base_cancelamento = [f"{h:02d}:{m:02d}" for h in range(hora_inicial_cancelamento, 20) for m in (0, 30)]
+    horarios_base_cancelamento = [f"{h:02d}:{m:02d}" for h in range(8, 20) for m in (0, 30)]
 
     horario_cancelar = st.selectbox("Horário do Agendamento", horarios_base_cancelamento) # Usa a lista completa
 
