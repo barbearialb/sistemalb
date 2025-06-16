@@ -357,7 +357,7 @@ for horario in horarios_tabela:
         elif dia_da_semana_tabela < 5:  # Segunda a Sexta
             # Lógica de Almoço (Simplificada para clareza)
             almoco_lucas = (hora_int == 12 or hora_int ==13) # 12:00 e 12:30
-            almoco_aluizio = (hora_int == 11 or hora_int == 12) # 11:00 e 11:30
+            almoco_aluizio = (hora_int == 12 or hora_int == 13) # 11:00 e 11:30
 
             horario_em_almoco = False
             if barbeiro == "Lucas Borges" and almoco_lucas:
@@ -449,7 +449,7 @@ if submitted:
         # Verifica almoço apenas se for dia de semana (0 a 4)
         if dia_da_semana_agendamento < 5:
             almoco_lucas = (hora_agendamento_int == 12 or hora_agendamento_int == 13) # 12:00 e 12:30
-            almoco_aluizio = (hora_agendamento_int == 11 or hora_agendamento_int == 12) # 11:00 e 11:30
+            almoco_aluizio = (hora_agendamento_int == 12 or hora_agendamento_int == 13) # 11:00 e 11:30
 
             # Se selecionou barbeiro específico
             if barbeiro_selecionado == "Lucas Borges" and almoco_lucas:
