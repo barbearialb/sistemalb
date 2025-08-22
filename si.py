@@ -208,26 +208,27 @@ def desbloquear_horario(data, horario, barbeiro):
     except Exception as e:
         st.error(f"Erro ao desbloquear horário: {e}")
 
+
+# DEPOIS (A forma correta e mais compatível)
 def buscar_agendamentos_e_bloqueios_do_dia(data_obj):
     """
     Busca todos os agendamentos do dia usando um prefixo de ID seguro (YYYY-MM-DD).
-    Esta é a forma correta e definitiva.
     """
     if not db:
         st.error("Firestore não inicializado.")
         return set()
 
     ocupados = set()
-    
-    # Formata a data para YYYY-MM-DD, que corresponde ao novo formato do ID.
     prefixo_id = data_obj.strftime('%Y-%m-%d')
 
     try:
-        # A consulta de prefixo agora vai funcionar corretamente
+        # --- A CORREÇÃO ESTÁ AQUI ---
+        # Trocamos FieldPath.document_id() por DOCUMENT_ID
         docs = db.collection('agendamentos') \
-                 .where(firestore.FieldPath.document_id(), '>=', prefixo_id) \
-                 .where(firestore.FieldPath.document_id(), '<', prefixo_id + '\uf8ff') \
+                 .where(firestore.DOCUMENT_ID, '>=', prefixo_id) \
+                 .where(firestore.DOCUMENT_ID, '<', prefixo_id + '\uf8ff') \
                  .stream()
+        # --- FIM DA CORREÇÃO ---
 
         for doc in docs:
             ocupados.add(doc.id)
@@ -685,6 +686,7 @@ with st.form("cancelar_form"):
                 else:
                     data_cancelar_str = data_cancelar.strftime('%d/%m/%Y')
                     st.error(f"Não foi encontrado agendamento para o telefone informado na data {data_cancelar_str}, às {horario_cancelar} com {barbeiro_cancelar}. Verifique os dados.")
+
 
 
 
