@@ -641,54 +641,51 @@ with st.form("cancelar_form"):
             st.error("Por favor, informe o telefone utilizado no agendamento.")
         else:
             with st.spinner("Processando cancelamento..."):
-                data_cancelar_str = data_cancelar.strftime('%d/%m/%Y') # Formata a data para string DD/MM/YYYY
-                agendamento_cancelado_data = cancelar_agendamento(data_cancelar_str, horario_cancelar, telefone_cancelar, barbeiro_cancelar)
+                data_para_id = data_cancelar.strftime('%Y-%m-%d')
+                doc_id_cancelar = f"{data_para_id}_{horario_cancelar}_{barbeiro_cancelar}"
 
-            if agendamento_cancelado_data is not None:
-                # --- Desbloquear Horário Seguinte (se aplicável) ---
-                servicos_cancelados = agendamento_cancelado_data.get('servicos', [])
-                corte_no_cancelado = any(corte in servicos_cancelados for corte in ["Tradicional", "Social", "Degradê", "Navalhado"])
-                barba_no_cancelado = "Barba" in servicos_cancelados
-                horario_seguinte_desbloqueado = False
+                agendamento_cancelado_data = cancelar_agendamento(doc_id_cancelar, telefone_cancelar)
 
-                if corte_no_cancelado and barba_no_cancelado:
-                    horario_agendamento_original = agendamento_cancelado_data['horario']
-                    barbeiro_original = agendamento_cancelado_data['barbeiro']
-                    data_original_str = agendamento_cancelado_data['data'] # Já deve estar como string DD/MM/YYYY da função cancelar_agendamento
+                if agendamento_cancelado_data is not None:
+                    servicos_cancelados = agendamento_cancelado_data.get('servicos', [])
+                    corte_no_cancelado = any(corte in servicos_cancelados for corte in ["Tradicional", "Social", "Degradê", "Navalhado"])
+                    barba_no_cancelado = "Barba" in servicos_cancelados
+                    horario_seguinte_desbloqueado = False
 
-                    horario_seguinte_dt = (datetime.strptime(horario_agendamento_original, '%H:%M') + timedelta(minutes=30))
-                    # Verifica se o horário seguinte é válido (antes das 20h)
-                    if horario_seguinte_dt.hour < 20:
-                        horario_seguinte_str = horario_seguinte_dt.strftime('%H:%M')
-                        # Tenta desbloquear (a função lida com erros internamente)
-                        desbloquear_horario(data_original_str, horario_seguinte_str, barbeiro_original)
-                        horario_seguinte_desbloqueado = True # Assume que tentou, a função printa o resultado
+                    if corte_no_cancelado and barba_no_cancelado:
+                        horario_agendamento_original = agendamento_cancelado_data['horario']
+                        barbeiro_original = agendamento_cancelado_data['barbeiro']
+                        data_obj_original = agendamento_cancelado_data['data']
 
+                        horario_seguinte_dt = (datetime.strptime(horario_agendamento_original, '%H:%M') + timedelta(minutes=30))
+                        if horario_seguinte_dt.hour < 20:
+                            horario_seguinte_str = horario_seguinte_dt.strftime('%H:%M')
+                            data_para_id_desbloqueio = data_obj_original.strftime('%Y-%m-%d')
+                            desbloquear_horario(data_para_id_desbloqueio, horario_seguinte_str, barbeiro_original)
+                            horario_seguinte_desbloqueado = True
 
-                # --- Preparar e Enviar E-mail ---
-                # Usa .get() para evitar erros se algum campo não existir no Firestore
+        # --- A sua lógica de E-mail e Mensagem de Sucesso (MANTIDA) ---
                 resumo_cancelamento = f"""
                 Agendamento Cancelado:
                 Nome: {agendamento_cancelado_data.get('nome', 'N/A')}
                 Telefone: {agendamento_cancelado_data.get('telefone', 'N/A')}
-                Data: {agendamento_cancelado_data.get('data', 'N/A')}
+                Data: {data_cancelar.strftime('%d/%m/%Y')}
                 Horário: {agendamento_cancelado_data.get('horario', 'N/A')}
                 Barbeiro: {agendamento_cancelado_data.get('barbeiro', 'N/A')}
                 Serviços: {', '.join(agendamento_cancelado_data.get('servicos', []))}
                 """
                 enviar_email("Agendamento Cancelado", resumo_cancelamento)
-
-                # --- Mensagem de Sucesso e Rerun ---
-                # verificar_disponibilidade.clear() # Limpa cache se estivesse usando
+        
                 st.success("Agendamento cancelado com sucesso!")
-                # st.info("Resumo do cancelamento:\n" + resumo_cancelamento) # Opcional exibir o resumo
                 if horario_seguinte_desbloqueado:
                     st.info("O horário seguinte, que estava bloqueado, foi liberado.")
+        
                 time.sleep(5)
                 st.rerun()
             else:
-                # Mensagem se cancelamento falhar (nenhum agendamento encontrado com os dados)
-                st.error(f"Não foi encontrado agendamento para o telefone informado na data {data_cancelar_str}, horário {horario_cancelar} e com o barbeiro {barbeiro_cancelar}. Verifique os dados e tente novamente.")
+        # Mensagem de erro
+                data_cancelar_str = data_cancelar.strftime('%d/%m/%Y')
+                st.error(f"Não foi encontrado agendamento para o telefone informado na data {data_cancelar_str}, às {horario_cancelar} com {barbeiro_cancelar}. Verifique os dados.")
 
 
 
