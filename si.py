@@ -678,13 +678,14 @@ with st.form("cancelar_form"):
         
                     st.success("Agendamento cancelado com sucesso!")
                     if horario_seguinte_desbloqueado:
-                    st.info("O horário seguinte, que estava bloqueado, foi liberado.")
+                        st.info("O horário seguinte, que estava bloqueado, foi liberado.")
         
                     time.sleep(5)
                     st.rerun()
                 else:
                     data_cancelar_str = data_cancelar.strftime('%d/%m/%Y')
                     st.error(f"Não foi encontrado agendamento para o telefone informado na data {data_cancelar_str}, às {horario_cancelar} com {barbeiro_cancelar}. Verifique os dados.")
+
 
 
 
