@@ -237,7 +237,8 @@ def buscar_agendamentos_e_bloqueios_do_dia(data_obj):
 
     return ocupados
 
-# @retry.Retry() # Remover se a retry padrão for suficiente
+
+# A SUA FUNÇÃO, COM A CORREÇÃO DO NOME DA VARIÁVEL
 def verificar_disponibilidade_horario_seguinte(data, horario, barbeiro):
     if not db:
         st.error("Firestore não inicializado.")
@@ -246,8 +247,6 @@ def verificar_disponibilidade_horario_seguinte(data, horario, barbeiro):
     try:
         horario_dt = datetime.strptime(horario, '%H:%M')
         horario_seguinte_dt = horario_dt + timedelta(minutes=30)
-        
-        # SUA LÓGICA IMPORTANTE - MANTIDA
         if horario_seguinte_dt.hour >= 20:
             return False 
 
@@ -255,13 +254,12 @@ def verificar_disponibilidade_horario_seguinte(data, horario, barbeiro):
         data_obj = datetime.strptime(data, '%d/%m/%Y')
         data_para_id = data_obj.strftime('%Y-%m-%d')
 
-        # --- CORREÇÃO DO NOME DA VARIÁVEL ---
-        # Padronizando para "chave_agendamento_seguinte"
+        # --- A CORREÇÃO ESTÁ AQUI ---
+        # O nome da variável foi padronizado para "chave_agendamento_seguinte"
         chave_agendamento_seguinte = f"{data_para_id}_{horario_seguinte_str}_{barbeiro}"
         agendamento_ref_seguinte = db.collection('agendamentos').document(chave_agendamento_seguinte)
         # --- FIM DA CORREÇÃO ---
 
-        # O resto do código já estava correto
         chave_bloqueio_seguinte = f"{data_para_id}_{horario_seguinte_str}_{barbeiro}_BLOQUEADO"
         bloqueio_ref_seguinte = db.collection('agendamentos').document(chave_bloqueio_seguinte)
 
@@ -276,7 +274,7 @@ def verificar_disponibilidade_horario_seguinte(data, horario, barbeiro):
     except Exception as e:
         st.error(f"Erro inesperado ao verificar disponibilidade do horário seguinte: {e}")
         return False
-    
+        
 # Função para bloquear horário para um barbeiro específico
 def bloquear_horario(data, horario, barbeiro):
     if not db:
@@ -691,5 +689,6 @@ with st.form("cancelar_form"):
             else:
                 # Mensagem se cancelamento falhar (nenhum agendamento encontrado com os dados)
                 st.error(f"Não foi encontrado agendamento para o telefone informado na data {data_cancelar_str}, horário {horario_cancelar} e com o barbeiro {barbeiro_cancelar}. Verifique os dados e tente novamente.")
+
 
 
