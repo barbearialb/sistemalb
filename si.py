@@ -665,27 +665,27 @@ with st.form("cancelar_form"):
                             horario_seguinte_desbloqueado = True
 
         # --- A sua lógica de E-mail e Mensagem de Sucesso (MANTIDA) ---
-                resumo_cancelamento = f"""
-                Agendamento Cancelado:
-                Nome: {agendamento_cancelado_data.get('nome', 'N/A')}
-                Telefone: {agendamento_cancelado_data.get('telefone', 'N/A')}
-                Data: {data_cancelar.strftime('%d/%m/%Y')}
-                Horário: {agendamento_cancelado_data.get('horario', 'N/A')}
-                Barbeiro: {agendamento_cancelado_data.get('barbeiro', 'N/A')}
-                Serviços: {', '.join(agendamento_cancelado_data.get('servicos', []))}
-                """
-                enviar_email("Agendamento Cancelado", resumo_cancelamento)
+                    resumo_cancelamento = f"""
+                    Agendamento Cancelado:
+                    Nome: {agendamento_cancelado_data.get('nome', 'N/A')}
+                    Telefone: {agendamento_cancelado_data.get('telefone', 'N/A')}
+                    Data: {data_cancelar.strftime('%d/%m/%Y')}
+                    Horário: {agendamento_cancelado_data.get('horario', 'N/A')}
+                    Barbeiro: {agendamento_cancelado_data.get('barbeiro', 'N/A')}
+                    Serviços: {', '.join(agendamento_cancelado_data.get('servicos', []))}
+                    """
+                    enviar_email("Agendamento Cancelado", resumo_cancelamento)
         
-                st.success("Agendamento cancelado com sucesso!")
-                if horario_seguinte_desbloqueado:
+                    st.success("Agendamento cancelado com sucesso!")
+                    if horario_seguinte_desbloqueado:
                     st.info("O horário seguinte, que estava bloqueado, foi liberado.")
         
-                time.sleep(5)
-                st.rerun()
-            else:
-        # Mensagem de erro
-                data_cancelar_str = data_cancelar.strftime('%d/%m/%Y')
-                st.error(f"Não foi encontrado agendamento para o telefone informado na data {data_cancelar_str}, às {horario_cancelar} com {barbeiro_cancelar}. Verifique os dados.")
+                    time.sleep(5)
+                    st.rerun()
+                else:
+                    data_cancelar_str = data_cancelar.strftime('%d/%m/%Y')
+                    st.error(f"Não foi encontrado agendamento para o telefone informado na data {data_cancelar_str}, às {horario_cancelar} com {barbeiro_cancelar}. Verifique os dados.")
+
 
 
 
