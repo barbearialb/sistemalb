@@ -246,27 +246,28 @@ def verificar_disponibilidade_horario_seguinte(data, horario, barbeiro):
     try:
         horario_dt = datetime.strptime(horario, '%H:%M')
         horario_seguinte_dt = horario_dt + timedelta(minutes=30)
-        # Verificar se o horário seguinte ainda está no mesmo dia e dentro do expediente
-        if horario_seguinte_dt.hour >= 20: # Ex: Se o agendamento é 19:30, não verifica 20:00
-            return False # Considera indisponível se ultrapassa o limite
+        
+        # SUA LÓGICA IMPORTANTE - MANTIDA
+        if horario_seguinte_dt.hour >= 20:
+            return False 
 
         horario_seguinte_str = horario_seguinte_dt.strftime('%H:%M')
         data_obj = datetime.strptime(data, '%d/%m/%Y')
         data_para_id = data_obj.strftime('%Y-%m-%d')
 
-
-        # Verificar agendamento regular no horário seguinte
-        have_agendamento_seguinte = f"{data_para_id}_{horario_seguinte_str}_{barbeiro}"
+        # --- CORREÇÃO DO NOME DA VARIÁVEL ---
+        # Padronizando para "chave_agendamento_seguinte"
+        chave_agendamento_seguinte = f"{data_para_id}_{horario_seguinte_str}_{barbeiro}"
         agendamento_ref_seguinte = db.collection('agendamentos').document(chave_agendamento_seguinte)
+        # --- FIM DA CORREÇÃO ---
 
-        # Verificar bloqueio no horário seguinte
+        # O resto do código já estava correto
         chave_bloqueio_seguinte = f"{data_para_id}_{horario_seguinte_str}_{barbeiro}_BLOQUEADO"
         bloqueio_ref_seguinte = db.collection('agendamentos').document(chave_bloqueio_seguinte)
 
         doc_agendamento_seguinte = agendamento_ref_seguinte.get()
         doc_bloqueio_seguinte = bloqueio_ref_seguinte.get()
 
-        # Retorna True (disponível) se NENHUM existir no horário seguinte
         return not doc_agendamento_seguinte.exists and not doc_bloqueio_seguinte.exists
 
     except google.api_core.exceptions.RetryError as e:
@@ -690,4 +691,5 @@ with st.form("cancelar_form"):
             else:
                 # Mensagem se cancelamento falhar (nenhum agendamento encontrado com os dados)
                 st.error(f"Não foi encontrado agendamento para o telefone informado na data {data_cancelar_str}, horário {horario_cancelar} e com o barbeiro {barbeiro_cancelar}. Verifique os dados e tente novamente.")
+
 
