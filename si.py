@@ -98,62 +98,52 @@ def enviar_email(assunto, mensagem):
     except Exception as e:
         st.error(f"Erro ao enviar e-mail: {e}")
 
-def salvar_agendamento(data, horario, nome, telefone, servicos, barbeiro):
+# SUBSTITUA A FUNÇÃO INTEIRA
+def salvar_agendamento(data_str, horario, nome, telefone, servicos, barbeiro):
     if not db:
-        st.error("Firestore não inicializado. Não é possível salvar.")
-        return False # Indicar falha
-
-    # 1. Converte a string de data para um objeto de data logo no início.
-    data_obj = datetime.strptime(data, '%d/%m/%Y')
-
-    # 2. Usa o objeto de data para criar o ID no formato CORRETO (YYYY-MM-DD).
-    data_para_id = data_obj.strftime('%Y-%m-%d')
-    chave_agendamento = f"{data_para_id}_{horario}_{barbeiro}"
-    
-    agendamento_ref = db.collection('agendamentos').document(chave_agendamento)
-
-    try:
-        agendamento_ref.set({
-            'data': data_obj,  # Salva o objeto de data no documento
-            'horario': horario,
-            'nome': nome,
-            'telefone': telefone,
-            'servicos': servicos,
-            'barbeiro': barbeiro,
-            'timestamp': firestore.SERVER_TIMESTAMP,
-            'agendado_por': 'atendente' # Adiciona um campo para saber a origem
-        })
-        return True
-    except Exception as e:
-        st.error(f"Erro ao salvar agendamento: {e}")
+        st.error("Firestore não inicializado.")
         return False
 
-    @firestore.transactional
-    def atualizar_agendamento(transaction):
-        doc = agendamento_ref.get(transaction=transaction)
-        if doc.exists:
-            raise ValueError("Horário já ocupado.")
-        transaction.set(agendamento_ref, {
-            'nome': nome,
-            'telefone': telefone,
-            'servicos': servicos,
-            'barbeiro': barbeiro,
-            'data': data_obj,  # Salvar o objeto datetime.datetime no Firestore
-            'horario': horario
-        })
-        return True # Indicar sucesso da transação
-
-    transaction = db.transaction()
     try:
-        resultado = atualizar_agendamento(transaction)
-        return resultado # Retorna True se sucesso
-    except ValueError as e:
-        st.error(f"Erro ao salvar agendamento: {e}")
-        return False # Indicar falha
-    except Exception as e:
-        st.error(f"Erro inesperado ao salvar agendamento: {e}")
-        return False # Indicar falha
+        # Converte a data string (que vem do formulário) para um objeto datetime
+        data_obj = datetime.strptime(data_str, '%d/%m/%Y')
+        
+        # Cria o ID do documento no formato correto YYYY-MM-DD
+        data_para_id = data_obj.strftime('%Y-%m-%d')
+        chave_agendamento = f"{data_para_id}_{horario}_{barbeiro}"
+        agendamento_ref = db.collection('agendamentos').document(chave_agendamento)
+        
+        # Esta é a parte que você perguntou, agora dentro da função principal
+        @firestore.transactional
+        def update_in_transaction(transaction, doc_ref):
+            doc = doc_ref.get(transaction=transaction)
+            if doc.exists:
+                # Se o documento já existe, a transação falha para evitar agendamento duplo
+                raise ValueError("Horário já ocupado por outra pessoa.")
+            
+            # Se o horário estiver livre, a transação define os novos dados
+            transaction.set(doc_ref, {
+                'data': data_obj,
+                'horario': horario,
+                'nome': nome,
+                'telefone': telefone,
+                'servicos': servicos,
+                'barbeiro': barbeiro,
+                'timestamp': firestore.SERVER_TIMESTAMP
+            })
+        
+        # Executa a transação
+        transaction = db.transaction()
+        update_in_transaction(transaction, agendamento_ref)
+        return True # Retorna sucesso
 
+    except ValueError as e:
+        # Captura o erro "Horário já ocupado" e exibe ao utilizador
+        st.error(f"Erro ao agendar: {e}")
+        return False
+    except Exception as e:
+        st.error(f"Erro inesperado ao salvar o agendamento: {e}")
+        return False
 # Função para cancelar agendamento no Firestore
 def cancelar_agendamento(data, horario, telefone, barbeiro):
     if not db:
@@ -247,8 +237,6 @@ def buscar_agendamentos_e_bloqueios_do_dia(data_obj):
 
     return ocupados
 
-# Função para verificar disponibilidade do horário e do horário seguinte
-# A política de retry padrão do Firestore client geralmente é suficiente.
 # @retry.Retry() # Remover se a retry padrão for suficiente
 def verificar_disponibilidade_horario_seguinte(data, horario, barbeiro):
     if not db:
@@ -263,13 +251,16 @@ def verificar_disponibilidade_horario_seguinte(data, horario, barbeiro):
             return False # Considera indisponível se ultrapassa o limite
 
         horario_seguinte_str = horario_seguinte_dt.strftime('%H:%M')
+        data_obj = datetime.strptime(data, '%d/%m/%Y')
+        data_para_id = data_obj.strftime('%Y-%m-%d')
+
 
         # Verificar agendamento regular no horário seguinte
-        chave_agendamento_seguinte = f"{data}_{horario_seguinte_str}_{barbeiro}"
+        have_agendamento_seguinte = f"{data_para_id}_{horario_seguinte_str}_{barbeiro}"
         agendamento_ref_seguinte = db.collection('agendamentos').document(chave_agendamento_seguinte)
 
         # Verificar bloqueio no horário seguinte
-        chave_bloqueio_seguinte = f"{data}_{horario_seguinte_str}_{barbeiro}_BLOQUEADO"
+        chave_bloqueio_seguinte = f"{data_para_id}_{horario_seguinte_str}_{barbeiro}_BLOQUEADO"
         bloqueio_ref_seguinte = db.collection('agendamentos').document(chave_bloqueio_seguinte)
 
         doc_agendamento_seguinte = agendamento_ref_seguinte.get()
@@ -551,21 +542,29 @@ if submitted:
         else: # Se for "Sem preferência" e sem visagismo
             barbeiros_a_verificar = list(barbeiros) # Verifica ambos
 
+# DEPOIS (CORRETO)
         barbeiro_agendado = None
+# A data já está como objeto em data_obj_agendamento_form
+        data_para_id_form = data_obj_agendamento_form.strftime('%Y-%-m-%d')
+
         for b in barbeiros_a_verificar:
-            # Re-verifica almoço para o caso "Sem preferência"
             if dia_da_semana_agendamento < 5:
                 intervalo_especial = mes == 7 and 10 <= dia <= 19
-                if not intervalo_especial:
-                    if b == "Lucas Borges" and (hora_agendamento_int == 12): continue
-                    if b == "Aluizio" and (hora_agendamento_int == 11): continue
- # Pula se Aluizio está almoçando
+            if not intervalo_especial:
+                if b == "Lucas Borges" and (hora_agendamento_int == 12 or hora_agendamento_int == 13):
+                    continue # Pula este barbeiro se estiver em almoço
+                if b == "Aluizio" and (hora_agendamento_int == 12 or hora_agendamento_int == 13):
+                    continue # Pula este barbeiro se estiver em almoço
 
-            # Verifica disponibilidade real no DB
-            if verificar_disponibilidade(data_agendamento_str_form, horario_agendamento, b):
+            chave_agendamento_form = f"{data_para_id_form}_{horario_agendamento}_{b}"
+            chave_bloqueio_form = f"{chave_agendamento_form}_BLOQUEADO"
+
+    # Verifica de forma instantânea no conjunto que já foi carregado
+            if (chave_agendamento_form not in agendamentos_do_dia) and (chave_bloqueio_form not in agendamentos_do_dia):
                 barbeiro_agendado = b
                 break # Encontrou um barbeiro disponível
 
+# O resto do seu código a partir daqui continua igual...
         if not barbeiro_agendado:
             st.error(f"Horário {horario_agendamento} indisponível para os barbeiros selecionados/disponíveis. Por favor, escolha outro horário ou verifique a tabela de disponibilidade.")
             st.stop()
@@ -691,3 +690,4 @@ with st.form("cancelar_form"):
             else:
                 # Mensagem se cancelamento falhar (nenhum agendamento encontrado com os dados)
                 st.error(f"Não foi encontrado agendamento para o telefone informado na data {data_cancelar_str}, horário {horario_cancelar} e com o barbeiro {barbeiro_cancelar}. Verifique os dados e tente novamente.")
+
