@@ -666,9 +666,9 @@ if submitted:
             if horario_seguinte_bloqueado:
                 st.info(f"O horário das {horario_seguinte_str} com {barbeiro_agendado} foi bloqueado para acomodar todos os serviços.")
             
-            st.info("Depois de 10 segundos a página será reiniciada.")
+            st.info("Depois de 5 segundos a página será reiniciada.")
 
-            time.sleep(10) # Pausa para o usuário ler as mensagens
+            time.sleep(5) # Pausa para o usuário ler as mensagens
             st.rerun()
 
         else:
@@ -737,4 +737,5 @@ with st.form("cancelar_form"):
         
                     time.sleep(5)
                     st.rerun()
+
 
