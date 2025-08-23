@@ -180,33 +180,30 @@ def cancelar_agendamento(doc_id, telefone_cliente):
         st.error(f"Ocorreu um erro ao tentar cancelar: {e}")
         return None
 
-# Nova função para desbloquear o horário seguinte
-def desbloquear_horario(data, horario, barbeiro):
+# no seu arquivo si (9).py
+
+def desbloquear_horario(data_para_id, horario, barbeiro):
+    """
+    Desbloqueia um horário usando a data já no formato correto (YYYY-MM-DD).
+    """
     if not db:
         st.error("Firestore não inicializado. Não é possível desbloquear.")
         return
 
-    # 1. Converte a string de data "dd/mm/yyyy" para um objeto de data.
-    try:
-        data_obj = datetime.strptime(data, '%d/%m/%Y')
-    except ValueError:
-        st.error("Formato de data inválido para desbloqueio.")
-        return
-
-    # 2. Usa o objeto de data para criar o ID no formato CORRETO (YYYY-MM-DD).
-    data_para_id = data_obj.strftime('%Y-%m-%d')
-    chave_bloqueio = f"{data_para_id}_{horario}_{barbeiro}_BLOQUEADO"
+    # A função agora recebe a data JÁ no formato YYY-MM-DD, então não precisa converter.
+    # As linhas que causavam o erro foram removidas.
     
+    chave_bloqueio = f"{data_para_id}_{horario}_{barbeiro}_BLOQUEADO"
     agendamento_ref = db.collection('agendamentos').document(chave_bloqueio)
     
     try:
-        # 3. Tenta apagar o documento diretamente.
-        # Se não existir, o Firestore simplesmente não faz nada.
+        # Tenta apagar o documento de bloqueio diretamente.
+        # Se o documento não existir, o Firestore não faz nada e não gera erro.
         agendamento_ref.delete()
-        st.success(f"Horário {horario} do dia {data} desbloqueado para {barbeiro}.")
+        # A mensagem de sucesso agora é mostrada na tela principal.
 
     except Exception as e:
-        st.error(f"Erro ao desbloquear horário: {e}")
+        st.error(f"Erro ao tentar desbloquear o horário seguinte: {e}")
 
 # SUBSTITUA A FUNÇÃO INTEIRA PELA VERSÃO ABAIXO:
 def buscar_agendamentos_e_bloqueios_do_dia(data_obj):
@@ -684,6 +681,7 @@ with st.form("cancelar_form"):
         
                     time.sleep(5)
                     st.rerun()
+
 
 
 
