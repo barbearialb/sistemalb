@@ -11,8 +11,6 @@ import google.api_core.retry as retry
 import random
 import pandas as pd
 import time
-from ics import Calendar, Event
-import pytz
 
 st.markdown(
     """
@@ -272,41 +270,6 @@ def verificar_disponibilidade_horario_seguinte(data, horario, barbeiro):
     except Exception as e:
         st.error(f"Erro inesperado ao verificar disponibilidade do horário seguinte: {e}")
         return False
-
-def criar_evento_ics(nome_cliente, servicos, barbeiro, data_obj, horario_str):
-    """
-    Cria o conteúdo de um arquivo .ics para um evento de calendário.
-    """
-    try:
-        tz = pytz.timezone('America/Sao_Paulo')
-        horario_obj = datetime.strptime(horario_str, '%H:%M').time()
-
-        # --- CORREÇÃO APLICADA AQUI ---
-        # Removemos o .date() desnecessário. A função agora combina
-        # o objeto de data diretamente com o objeto de hora.
-        start_time = datetime.combine(data_obj, horario_obj)
-        
-        start_time_tz = tz.localize(start_time)
-
-        is_double = "Barba" in servicos and any(c in servicos for c in ["Tradicional", "Social", "Degradê", "Navalhado"])
-        duration_minutes = 60 if is_double else 30
-        end_time_tz = start_time_tz + timedelta(minutes=duration_minutes)
-
-        c = Calendar()
-        e = Event()
-        e.name = f"Agendamento na Barbearia LB: {', '.join(servicos)}"
-        e.begin = start_time_tz
-        e.end = end_time_tz
-        e.location = "Barbearia Lucas Borges"
-        e.description = f"Serviços agendados com o barbeiro {barbeiro}."
-        c.events.add(e)
-        
-        return str(c)
-        
-    except Exception as e:
-        # Imprime o erro no console para depuração futura
-        print(f"ERRO AO CRIAR ARQUIVO .ICS: {e}")
-        return None
         
 # Função para bloquear horário para um barbeiro específico
 def bloquear_horario(data, horario, barbeiro):
@@ -340,7 +303,6 @@ def bloquear_horario(data, horario, barbeiro):
     except Exception as e:
         st.error(f"Erro ao bloquear horário: {e}")
         return False
-
 
 # Interface Streamlit
 st.title("Barbearia Lucas Borges - Agendamentos")
@@ -629,22 +591,7 @@ if submitted:
                 horario_seguinte_bloqueado = bloquear_horario(data_agendamento_str_form, horario_seguinte_str, barbeiro_agendado)
                 if not horario_seguinte_bloqueado:
                      st.warning("O agendamento principal foi salvo, mas houve um erro ao bloquear o horário seguinte. Por favor, entre em contato com a barbearia se necessário.")
-            
-            ics_content = criar_evento_ics(
-                nome_cliente=nome, 
-                servicos=servicos_selecionados, 
-                barbeiro=barbeiro_agendado, 
-                data_obj=data_obj_agendamento_form, # Usamos o objeto de data
-                horario_str=horario_agendamento
-            )
-            if ics_content:
-                st.download_button(
-                    label="📅 Adicionar ao Calendário",
-                    data=ics_content,
-                    file_name="agendamento_barbearia.ics",
-                    mime="text/calendar",
-                    use_container_width=True
-                )
+
 
             # --- Preparar e Enviar E-mail ---
             resumo = f"""
@@ -662,9 +609,9 @@ if submitted:
             st.info("Resumo do agendamento:\n" + resumo)
             if horario_seguinte_bloqueado:
                 st.info(f"O horário das {horario_seguinte_str} com {barbeiro_agendado} foi bloqueado para acomodar todos os serviços.")
-            
-            st.info("Depois de 5 segundos a página será reiniciada.")
 
+            # Limpar cache (se estivesse usando) e atualizar a página
+            # verificar_disponibilidade.clear()
             time.sleep(5) # Pausa para o usuário ler as mensagens
             st.rerun()
 
@@ -734,6 +681,12 @@ with st.form("cancelar_form"):
         
                     time.sleep(5)
                     st.rerun()
+
+
+
+
+
+
 
 
 
