@@ -272,43 +272,40 @@ def verificar_disponibilidade_horario_seguinte(data, horario, barbeiro):
     except Exception as e:
         st.error(f"Erro inesperado ao verificar disponibilidade do horário seguinte: {e}")
         return False
-# ADICIONE ESTA NOVA FUNÇÃO AO SEU si (9).py
 
 def criar_evento_ics(nome_cliente, servicos, barbeiro, data_obj, horario_str):
     """
     Cria o conteúdo de um arquivo .ics para um evento de calendário.
     """
     try:
-        # Define o fuso horário de São Paulo para garantir que o horário seja correto
         tz = pytz.timezone('America/Sao_Paulo')
-
-        # Combina a data (que já é um objeto) com o horário (que é uma string)
         horario_obj = datetime.strptime(horario_str, '%H:%M').time()
-        start_time = datetime.combine(data_obj.date(), horario_obj)
+
+        # --- CORREÇÃO APLICADA AQUI ---
+        # Removemos o .date() desnecessário. A função agora combina
+        # o objeto de data diretamente com o objeto de hora.
+        start_time = datetime.combine(data_obj, horario_obj)
         
-        # Torna o horário 'consciente' do fuso horário
         start_time_tz = tz.localize(start_time)
 
-        # Calcula a duração (30 min padrão, 60 min para Corte+Barba)
         is_double = "Barba" in servicos and any(c in servicos for c in ["Tradicional", "Social", "Degradê", "Navalhado"])
         duration_minutes = 60 if is_double else 30
         end_time_tz = start_time_tz + timedelta(minutes=duration_minutes)
 
-        # Cria a estrutura do evento de calendário
         c = Calendar()
         e = Event()
-        e.name = f"Agendamento na Barbearia Lucas Borges: {', '.join(servicos)}"
+        e.name = f"Agendamento na Barbearia LB: {', '.join(servicos)}"
         e.begin = start_time_tz
         e.end = end_time_tz
         e.location = "Barbearia Lucas Borges"
         e.description = f"Serviços agendados com o barbeiro {barbeiro}."
-
         c.events.add(e)
         
-        # Retorna o conteúdo do arquivo como texto
         return str(c)
+        
     except Exception as e:
-        print(f"Erro ao criar arquivo .ics: {e}")
+        # Imprime o erro no console para depuração futura
+        print(f"ERRO AO CRIAR ARQUIVO .ICS: {e}")
         return None
         
 # Função para bloquear horário para um barbeiro específico
@@ -737,5 +734,6 @@ with st.form("cancelar_form"):
         
                     time.sleep(5)
                     st.rerun()
+
 
 
