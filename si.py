@@ -546,9 +546,11 @@ if submitted:
 # A data já está como objeto em data_obj_agendamento_form
         data_para_id_form = data_obj_agendamento_form.strftime('%Y-%-m-%d')
 
+        intervalo_especial = False
+        if dia_da_semana_agendamento < 5:
+            intervalo_especial = (mes == 7 and 10 <= dia <= 19)
+            
         for b in barbeiros_a_verificar:
-            if dia_da_semana_agendamento < 5:
-                intervalo_especial = mes == 7 and 10 <= dia <= 19
             if not intervalo_especial:
                 if b == "Lucas Borges" and (hora_agendamento_int == 12 or hora_agendamento_int == 13):
                     continue # Pula este barbeiro se estiver em almoço
@@ -685,6 +687,7 @@ with st.form("cancelar_form"):
                 else:
                     data_cancelar_str = data_cancelar.strftime('%d/%m/%Y')
                     st.error(f"Não foi encontrado agendamento para o telefone informado na data {data_cancelar_str}, às {horario_cancelar} com {barbeiro_cancelar}. Verifique os dados.")
+
 
 
 
