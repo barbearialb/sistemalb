@@ -209,9 +209,7 @@ def desbloquear_horario(data, horario, barbeiro):
     except Exception as e:
         st.error(f"Erro ao desbloquear horário: {e}")
 
-
-# SUBSTITUA A SUA FUNÇÃO ANTIGA POR ESTA VERSÃO CORRIGIDA
-
+# SUBSTITUA A FUNÇÃO INTEIRA PELA VERSÃO ABAIXO:
 def buscar_agendamentos_e_bloqueios_do_dia(data_obj):
     """
     Busca todos os agendamentos do dia usando um prefixo de ID seguro (YYYY-MM-DD).
@@ -224,11 +222,11 @@ def buscar_agendamentos_e_bloqueios_do_dia(data_obj):
     prefixo_id = data_obj.strftime('%Y-%m-%d')
 
     try:
-        # --- A CORREÇÃO ESTÁ AQUI ---
-        # Usamos 'FieldPath' diretamente, sem o 'firestore.' na frente.
+        # --- SOLUÇÃO DEFINITIVA USANDO order_by, start_at e end_at ---
         docs = db.collection('agendamentos') \
-                 .where(FieldPath.document_id(), '>=', prefixo_id) \
-                 .where(FieldPath.document_id(), '<', prefixo_id + '\uf8ff') \
+                 .order_by(FieldPath.document_id()) \
+                 .start_at([prefixo_id]) \
+                 .end_at([prefixo_id + '\uf8ff']) \
                  .stream()
         # --- FIM DA CORREÇÃO ---
 
@@ -687,6 +685,7 @@ with st.form("cancelar_form"):
                 else:
                     data_cancelar_str = data_cancelar.strftime('%d/%m/%Y')
                     st.error(f"Não foi encontrado agendamento para o telefone informado na data {data_cancelar_str}, às {horario_cancelar} com {barbeiro_cancelar}. Verifique os dados.")
+
 
 
 
