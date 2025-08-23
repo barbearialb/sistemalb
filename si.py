@@ -647,6 +647,7 @@ if submitted:
                     file_name="agendamento_barbearia.ics",
                     mime="text/calendar",
                     use_container_width=True
+                )
 
             # --- Preparar e Enviar E-mail ---
             resumo = f"""
@@ -736,3 +737,4 @@ with st.form("cancelar_form"):
         
                     time.sleep(5)
                     st.rerun()
+
