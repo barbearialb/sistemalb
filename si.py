@@ -1,6 +1,7 @@
 import streamlit as st
 import firebase_admin
 from firebase_admin import credentials, firestore, auth
+from google.cloud.firestore_v1.field_path import FieldPath
 from datetime import datetime, timedelta
 import smtplib
 from email.mime.text import MIMEText
@@ -209,7 +210,8 @@ def desbloquear_horario(data, horario, barbeiro):
         st.error(f"Erro ao desbloquear horário: {e}")
 
 
-# SUBSTITUA A SUA FUNÇÃO ANTIGA POR ESTA
+# SUBSTITUA A SUA FUNÇÃO ANTIGA POR ESTA VERSÃO CORRIGIDA
+
 def buscar_agendamentos_e_bloqueios_do_dia(data_obj):
     """
     Busca todos os agendamentos do dia usando um prefixo de ID seguro (YYYY-MM-DD).
@@ -223,10 +225,10 @@ def buscar_agendamentos_e_bloqueios_do_dia(data_obj):
 
     try:
         # --- A CORREÇÃO ESTÁ AQUI ---
-        # Trocamos firestore.DOCUMENT_ID pelo método correto: firestore.FieldPath.document_id()
+        # Usamos 'FieldPath' diretamente, sem o 'firestore.' na frente.
         docs = db.collection('agendamentos') \
-                 .where(firestore.FieldPath.document_id(), '>=', prefixo_id) \
-                 .where(firestore.FieldPath.document_id(), '<', prefixo_id + '\uf8ff') \
+                 .where(FieldPath.document_id(), '>=', prefixo_id) \
+                 .where(FieldPath.document_id(), '<', prefixo_id + '\uf8ff') \
                  .stream()
         # --- FIM DA CORREÇÃO ---
 
@@ -685,6 +687,7 @@ with st.form("cancelar_form"):
                 else:
                     data_cancelar_str = data_cancelar.strftime('%d/%m/%Y')
                     st.error(f"Não foi encontrado agendamento para o telefone informado na data {data_cancelar_str}, às {horario_cancelar} com {barbeiro_cancelar}. Verifique os dados.")
+
 
 
 
