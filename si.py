@@ -145,40 +145,39 @@ def salvar_agendamento(data_str, horario, nome, telefone, servicos, barbeiro):
     except Exception as e:
         st.error(f"Erro inesperado ao salvar o agendamento: {e}")
         return False
+
 # Função para cancelar agendamento no Firestore
-def cancelar_agendamento(data, horario, telefone, barbeiro):
+def cancelar_agendamento(doc_id, telefone_cliente):
+    """
+    Cancela um agendamento no Firestore de forma segura.
+    """
     if not db:
-        st.error("Firestore não inicializado. Não é possível cancelar.")
+        st.error("Firestore não inicializado.")
         return None
-
-    # 1. Converte a string de data "dd/mm/yyyy" para um objeto de data.
-    try:
-        data_obj = datetime.strptime(data, '%d/%m/%Y')
-    except ValueError:
-        st.error("Formato de data inválido para cancelamento.")
-        return None
-
-    # 2. Usa o objeto de data para criar o ID no formato CORRETO (YYYY-MM-DD).
-    data_para_id = data_obj.strftime('%Y-%m-%d')
-    chave_agendamento = f"{data_para_id}_{horario}_{barbeiro}"
     
-    agendamento_ref = db.collection('agendamentos').document(chave_agendamento)
-
     try:
-        doc = agendamento_ref.get()
-        
-        # 3. Verifica se o documento existe e se o telefone corresponde.
-        if doc.exists and doc.to_dict().get('telefone') == telefone:
-            agendamento_data = doc.to_dict()
-            agendamento_ref.delete()
-            st.success("Agendamento cancelado com sucesso!")
-            return agendamento_data # Retorna os dados do agendamento cancelado
-        else:
-            st.error("Nenhum agendamento encontrado com os dados fornecidos ou o telefone não corresponde.")
-            return None
-            
+        doc_ref = db.collection('agendamentos').document(doc_id)
+        doc = doc_ref.get()
+
+        # PASSO CHAVE: VERIFICA SE O DOCUMENTO EXISTE ANTES DE TUDO
+        if not doc.exists:
+            st.error(f"Nenhum agendamento encontrado com o ID: {doc_id}")
+            return "not_found" # Retorna um código de erro
+
+        agendamento_data = doc.to_dict()
+        telefone_no_banco = agendamento_data.get('telefone', '') # Pega o telefone de forma segura
+
+        # Compara os telefones
+        if telefone_no_banco.replace(" ", "").replace("-", "") != telefone_cliente.replace(" ", "").replace("-", ""):
+            st.error("O número de telefone não corresponde ao agendamento.")
+            return "phone_mismatch" # Retorna outro código de erro
+
+        # Se tudo deu certo, deleta e retorna os dados
+        doc_ref.delete()
+        return agendamento_data
+
     except Exception as e:
-        st.error(f"Erro ao cancelar agendamento: {e}")
+        st.error(f"Ocorreu um erro ao tentar cancelar: {e}")
         return None
 
 # Nova função para desbloquear o horário seguinte
@@ -646,9 +645,10 @@ with st.form("cancelar_form"):
                 data_para_id = data_cancelar.strftime('%Y-%m-%d')
                 doc_id_cancelar = f"{data_para_id}_{horario_cancelar}_{barbeiro_cancelar}"
 
-                agendamento_cancelado_data = cancelar_agendamento(doc_id_cancelar, telefone_cancelar)
+                resultado_cancelamento = cancelar_agendamento(doc_id_cancelar, telefone_cancelar)
 
-                if agendamento_cancelado_data is not None:
+                if isinstance(resultado_cancelamento, dict):
+                    agendamento_cancelado_data = resultado_cancelamento
                     servicos_cancelados = agendamento_cancelado_data.get('servicos', [])
                     corte_no_cancelado = any(corte in servicos_cancelados for corte in ["Tradicional", "Social", "Degradê", "Navalhado"])
                     barba_no_cancelado = "Barba" in servicos_cancelados
@@ -684,11 +684,6 @@ with st.form("cancelar_form"):
         
                     time.sleep(5)
                     st.rerun()
-                else:
-                    data_cancelar_str = data_cancelar.strftime('%d/%m/%Y')
-                    st.error(f"Não foi encontrado agendamento para o telefone informado na data {data_cancelar_str}, às {horario_cancelar} com {barbeiro_cancelar}. Verifique os dados.")
-
-
 
 
 
