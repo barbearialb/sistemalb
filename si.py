@@ -209,7 +209,7 @@ def desbloquear_horario(data, horario, barbeiro):
         st.error(f"Erro ao desbloquear horário: {e}")
 
 
-# DEPOIS (A forma correta e mais compatível)
+# SUBSTITUA A SUA FUNÇÃO ANTIGA POR ESTA
 def buscar_agendamentos_e_bloqueios_do_dia(data_obj):
     """
     Busca todos os agendamentos do dia usando um prefixo de ID seguro (YYYY-MM-DD).
@@ -223,10 +223,10 @@ def buscar_agendamentos_e_bloqueios_do_dia(data_obj):
 
     try:
         # --- A CORREÇÃO ESTÁ AQUI ---
-        # Trocamos FieldPath.document_id() por DOCUMENT_ID
+        # Trocamos firestore.DOCUMENT_ID pelo método correto: firestore.FieldPath.document_id()
         docs = db.collection('agendamentos') \
-                 .where(firestore.DOCUMENT_ID, '>=', prefixo_id) \
-                 .where(firestore.DOCUMENT_ID, '<', prefixo_id + '\uf8ff') \
+                 .where(firestore.FieldPath.document_id(), '>=', prefixo_id) \
+                 .where(firestore.FieldPath.document_id(), '<', prefixo_id + '\uf8ff') \
                  .stream()
         # --- FIM DA CORREÇÃO ---
 
@@ -237,7 +237,6 @@ def buscar_agendamentos_e_bloqueios_do_dia(data_obj):
         st.error(f"Erro ao buscar agendamentos do dia: {e}")
 
     return ocupados
-
 
 # A SUA FUNÇÃO, COM A CORREÇÃO DO NOME DA VARIÁVEL
 def verificar_disponibilidade_horario_seguinte(data, horario, barbeiro):
@@ -686,6 +685,7 @@ with st.form("cancelar_form"):
                 else:
                     data_cancelar_str = data_cancelar.strftime('%d/%m/%Y')
                     st.error(f"Não foi encontrado agendamento para o telefone informado na data {data_cancelar_str}, às {horario_cancelar} com {barbeiro_cancelar}. Verifique os dados.")
+
 
 
 
