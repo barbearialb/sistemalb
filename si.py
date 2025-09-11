@@ -13,13 +13,16 @@ import pandas as pd
 import time
 
 # --- NOVO BLOCO DE ESTILO (CSS) ---
+# --- NOVO BLOCO DE ESTILO (CSS Otimizado para Grade) ---
 st.markdown("""
 <style>
-    /* Estilo para os botões de agendamento */
+    /* Estilo para os botões de agendamento na grade */
     .stButton > button {
         width: 100%;
+        height: 55px; /* Altura fixa para alinhar a grade */
+        font-weight: bold;
         border-radius: 5px;
-        background-color: #28a745;
+        background-color: #28a745; /* Verde */
         color: white;
         border: none;
     }
@@ -28,22 +31,25 @@ st.markdown("""
         color: white;
         border: none;
     }
-    /* Estilo para as caixas de status (Ocupado, Almoço, etc.) */
-    .status-box {
-        padding: 8px;
-        margin: 2px 0;
+    /* Desabilita o botão para que não pareça clicável quando não está */
+    .stButton > button:disabled {
+        background-color: #e0e0e0 !important;
+        color: #a0a0a0 !important;
+        border: 1px solid #c0c0c0;
+    }
+
+    /* Estilo para as caixas de status na grade (Ocupado, Almoço, etc.) */
+    .grid-status-box {
+        width: 100%;
+        height: 55px; /* Mesma altura dos botões */
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
         text-align: center;
         border-radius: 5px;
         font-weight: bold;
-    }
-    /* Estilo para a coluna do horário, para alinhar ao centro */
-    .time-slot {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        height: 100%;
-        font-weight: bold;
-        padding-top: 8px;
+        padding: 5px;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -433,20 +439,39 @@ horarios_tabela = [f"{h:02d}:{m:02d}" for h in range(8, 20) for m in (0, 30)]
 for barbeiro, tab in abas_barbeiros.items():
     with tab:
         st.markdown(f"##### Horários para **{barbeiro}**")
-        for horario in horarios_tabela:
-            row_cols = st.columns((1, 3))
-            with row_cols[0]:
-                st.markdown(f"<div class='time-slot'>{horario}</div>", unsafe_allow_html=True)
-            with row_cols[1]:
-                status, bg_color, text_color = determinar_status_horario(horario, barbeiro, data_obj_tabela, agendamentos_do_dia)
-                if status == "Disponível":
-                    if st.button("Agendar", key=f"btn_{horario}_{barbeiro}"):
-                        st.session_state.horario_selecionado = horario
-                        st.session_state.barbeiro_selecionado_tabela = barbeiro
-                        st.rerun()
-                else:
-                    st.markdown(f'<div class="status-box" style="background-color:{bg_color}; color:{text_color};">{status}</div>', unsafe_allow_html=True)
+        
+        # Define quantos horários queremos por linha na grade
+        horarios_por_linha = 4 
+        
+        # Agrupa a lista completa de horários em pequenas listas (uma para cada linha)
+        linhas_de_horarios = [horarios_tabela[i:i + horarios_por_linha] for i in range(0, len(horarios_tabela), horarios_por_linha)]
 
+        # Cria as linhas da grade
+        for linha in linhas_de_horarios:
+            # Cria o número de colunas que definimos (4)
+            cols = st.columns(horarios_por_linha) 
+            
+            # Preenche cada coluna com um horário
+            for i, horario in enumerate(linha):
+                with cols[i]:
+                    # Pega o status do horário usando nossa função "cérebro"
+                    status, bg_color, text_color = determinar_status_horario(horario, barbeiro, data_obj_tabela, agendamentos_do_dia)
+
+                    if status == "Disponível":
+                        # Se disponível, cria um botão clicável só com a hora
+                        if st.button(horario, key=f"btn_{horario}_{barbeiro}"):
+                            st.session_state.horario_selecionado = horario
+                            st.session_state.barbeiro_selecionado_tabela = barbeiro
+                            st.rerun()
+                    else:
+                        # Se não, cria uma caixa colorida com o status
+                        # O <br> quebra a linha para o texto caber melhor
+                        st.markdown(f'''
+                        <div class="grid-status-box" style="background-color:{bg_color}; color:{text_color};">
+                            <span>{horario}</span>
+                            <small>{status}</small>
+                        </div>
+                        ''', unsafe_allow_html=True)
 st.markdown("---")
 
 # Formulário de Agendamento Otimizado (só aparece quando um horário é selecionado)
@@ -590,6 +615,7 @@ with st.form("cancelar_form"):
         
                     time.sleep(5)
                     st.rerun()
+
 
 
 
