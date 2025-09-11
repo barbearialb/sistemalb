@@ -606,6 +606,88 @@ elif st.session_state.view == 'agendar':
         servicos_visagismo = ["Abordagem de visagismo", "Consultoria de visagismo"]
         if barbeiro_clicado == "Aluizio":
             servicos_disponiveis_form = [s for s in lista_servicos if s not in servicos_visagismo]
+
+# --- NOVO SISTEMA DE JANELAS (COMPLETO E COM TODAS AS FUNÇÕES) ---
+
+# --- JANELA 1: TELA DA TABELA DE HORÁRIOS ---
+if st.session_state.view == 'tabela':
+
+    # Exibe a mensagem de sucesso e o botão de download se um agendamento foi feito
+    if st.session_state.get("agendamento_sucesso"):
+        st.success(st.session_state.agendamento_sucesso)
+        if st.session_state.get("imagem_bytes"):
+            st.download_button(
+                label="📥 Baixar Resumo do Agendamento",
+                data=st.session_state.imagem_bytes,
+                file_name=st.session_state.nome_arquivo,
+                mime="image/png"
+            )
+        # Limpa as variáveis para não aparecerem de novo
+        del st.session_state.agendamento_sucesso
+        if "imagem_bytes" in st.session_state: del st.session_state.imagem_bytes
+        if "nome_arquivo" in st.session_state: del st.session_state.nome_arquivo
+
+    st.subheader("Disponibilidade dos Barbeiros")
+    data_obj_tabela = st.session_state.data_agendamento
+    agendamentos_do_dia = buscar_agendamentos_e_bloqueios_do_dia(data_obj_tabela)
+    
+    html_table = "<table style='width:100%; border-collapse: collapse;'>"
+    html_table += "<thead><tr style='background-color:#f2f2f2;'><th style='padding: 8px; border: 1px solid #ddd;'>Horário</th>"
+    for barbeiro in barbeiros:
+        html_table += f"<th style='padding: 8px; border: 1px solid #ddd;'>{barbeiro}</th>"
+    html_table += "</tr></thead><tbody>"
+
+    horarios = [f"{h:02d}:{m:02d}" for h in range(8, 20) for m in (0, 30)]
+    
+    # Truque para sobrepor botões na tabela HTML
+    # Criamos colunas invisíveis no topo da página
+    cols_placeholder = st.columns(len(barbeiros) * len(horarios))
+    idx = 0
+
+    for horario in horarios:
+        html_table += f"<tr><td style='padding: 8px; border: 1px solid #ddd; text-align: center; font-weight: bold;'>{horario}</td>"
+        for barbeiro in barbeiros:
+            status, bg_color, text_color = determinar_status_horario(horario, barbeiro, data_obj_tabela, agendamentos_do_dia)
+
+            if status == "Disponível":
+                # Colocamos o botão na coluna invisível correspondente
+                with cols_placeholder[idx]:
+                    if st.button("Agendar", key=f"btn_{horario}_{barbeiro}", use_container_width=True):
+                        st.session_state.view = 'agendar'
+                        st.session_state.agendamento_info = {
+                            'horario': horario,
+                            'barbeiro': barbeiro,
+                            'data_obj': data_obj_tabela
+                        }
+                        st.rerun()
+                # A célula da tabela fica "vazia" para o botão aparecer sobre ela
+                html_table += f"<td style='background-color:{bg_color}; text-align: center; padding: 2px;'></td>"
+                idx += 1
+            else:
+                html_table += f"<td style='background-color:{bg_color}; color:{text_color}; padding: 8px; border: 1px solid #ddd; text-align: center;'>{status}</td>"
+        html_table += "</tr>"
+    html_table += "</tbody></table>"
+    st.markdown(html_table, unsafe_allow_html=True)
+
+
+# --- JANELA 2: TELA DO FORMULÁRIO DE AGENDAMENTO (COM LÓGICA COMPLETA) ---
+elif st.session_state.view == 'agendar':
+    
+    info = st.session_state.agendamento_info
+    horario_clicado = info['horario']
+    barbeiro_clicado = info['barbeiro']
+    data_obj_agendamento = info['data_obj']
+
+    st.subheader("Finalizar Agendamento")
+    st.info(f"Agendando para **{data_obj_agendamento.strftime('%d/%m/%Y')}** às **{horario_clicado}** com **{barbeiro_clicado}**.")
+
+    with st.form("agendar_form_view"):
+        nome = st.text_input("Seu Nome Completo")
+        telefone = st.text_input("Seu Telefone (com DDD)")
+        
+        servicos_visagismo = ["Abordagem de visagismo", "Consultoria de visagismo"]
+        if barbeiro_clicado == "Aluizio":
+            servicos_disponiveis_form = [s for s in lista_servicos if s not in servicos_visagismo]
             st.warning("Aluizio não realiza serviços de visagismo.")
         else:
             servicos_disponiveis_form = list(lista_servicos)
@@ -739,6 +821,7 @@ with st.form("cancelar_form"):
         
                     time.sleep(5)
                     st.rerun()
+
 
 
 
