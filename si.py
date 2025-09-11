@@ -107,6 +107,12 @@ lista_servicos = servicos
 
 barbeiros = ["Aluizio", "Lucas Borges"]
 
+# --- NOVO: CONTROLE DE JANELAS (VIEWS) ---
+if 'view' not in st.session_state:
+    st.session_state.view = 'tabela'
+if 'agendamento_info' not in st.session_state:
+    st.session_state.agendamento_info = {}
+
 # Função para enviar e-mail
 def enviar_email(assunto, mensagem):
     # Proteção extra para caso as credenciais não carreguem
@@ -524,59 +530,151 @@ if query_params.get("action") == "agendar":
                     else:
                         st.error("Não foi possível agendar. O horário pode ter sido ocupado enquanto você preenchia. Por favor, feche e tente novamente.")
 
+# --- NOVO SISTEMA DE JANELAS (COMPLETO E COM TODAS AS FUNÇÕES) ---
 
-# Exibe a mensagem de sucesso e o botão de download na página principal
-if st.session_state.get("agendamento_sucesso"):
-    st.success(st.session_state.agendamento_sucesso)
-    if st.session_state.get("imagem_bytes"):
-        st.download_button(
-            label="📥 Baixar Resumo do Agendamento",
-            data=st.session_state.imagem_bytes,
-            file_name=st.session_state.nome_arquivo,
-            mime="image/png"
-        )
-    # Limpa as variáveis de estado para não aparecerem novamente
-    del st.session_state.agendamento_sucesso
-    if "imagem_bytes" in st.session_state: del st.session_state.imagem_bytes
-    if "nome_arquivo" in st.session_state: del st.session_state.nome_arquivo
+# --- JANELA 1: TELA DA TABELA DE HORÁRIOS ---
+if st.session_state.view == 'tabela':
 
+    # Exibe a mensagem de sucesso e o botão de download se um agendamento foi feito
+    if st.session_state.get("agendamento_sucesso"):
+        st.success(st.session_state.agendamento_sucesso)
+        if st.session_state.get("imagem_bytes"):
+            st.download_button(
+                label="📥 Baixar Resumo do Agendamento",
+                data=st.session_state.imagem_bytes,
+                file_name=st.session_state.nome_arquivo,
+                mime="image/png"
+            )
+        # Limpa as variáveis para não aparecerem de novo
+        del st.session_state.agendamento_sucesso
+        if "imagem_bytes" in st.session_state: del st.session_state.imagem_bytes
+        if "nome_arquivo" in st.session_state: del st.session_state.nome_arquivo
 
-# Parte B: Geração e Exibição da Tabela HTML Clicável (sem alterações)
-# ---------------------------------------------------------------------
-st.subheader("Disponibilidade dos Barbeiros")
-data_obj_tabela = st.session_state.data_agendamento
-agendamentos_do_dia = buscar_agendamentos_e_bloqueios_do_dia(data_obj_tabela)
-
-html_table = "<table style='width:100%; border-collapse: collapse;'>"
-# ... (o resto do seu código de criação da tabela HTML continua aqui, exatamente como estava antes)
-html_table += "<thead><tr style='background-color:#f2f2f2;'><th style='padding: 8px; border: 1px solid #ddd;'>Horário</th>"
-for barbeiro in barbeiros:
-    html_table += f"<th style='padding: 8px; border: 1px solid #ddd;'>{barbeiro}</th>"
-html_table += "</tr></thead><tbody>"
-
-horarios = [f"{h:02d}:{m:02d}" for h in range(8, 20) for m in (0, 30)]
-
-for horario in horarios:
-    html_table += f"<tr><td style='padding: 8px; border: 1px solid #ddd; text-align: center; font-weight: bold;'>{horario}</td>"
+    st.subheader("Disponibilidade dos Barbeiros")
+    data_obj_tabela = st.session_state.data_agendamento
+    agendamentos_do_dia = buscar_agendamentos_e_bloqueios_do_dia(data_obj_tabela)
+    
+    html_table = "<table style='width:100%; border-collapse: collapse;'>"
+    html_table += "<thead><tr style='background-color:#f2f2f2;'><th style='padding: 8px; border: 1px solid #ddd;'>Horário</th>"
     for barbeiro in barbeiros:
-        status, bg_color, text_color = determinar_status_horario(horario, barbeiro, data_obj_tabela, agendamentos_do_dia)
+        html_table += f"<th style='padding: 8px; border: 1px solid #ddd;'>{barbeiro}</th>"
+    html_table += "</tr></thead><tbody>"
 
-        if status == "Disponível":
-            params = f"action=agendar&time={horario}&barber={barbeiro.replace(' ', '+')}"
-            link_style = "display: block; padding: 8px; color: white; text-decoration: none; font-weight: bold;"
-            html_table += f'''
-                <td style="background-color:{bg_color}; padding: 0; text-align: center;">
-                    <a href="?{params}" target="_self" style="{link_style}">
-                        Agendar
-                    </a>
-                </td>
-            '''
+    horarios = [f"{h:02d}:{m:02d}" for h in range(8, 20) for m in (0, 30)]
+    cols_placeholder = st.columns(len(barbeiros) * len(horarios)) # Placeholders para os botões
+
+    idx = 0
+    for horario in horarios:
+        html_table += f"<tr><td style='padding: 8px; border: 1px solid #ddd; text-align: center; font-weight: bold;'>{horario}</td>"
+        for barbeiro in barbeiros:
+            status, bg_color, text_color = determinar_status_horario(horario, barbeiro, data_obj_tabela, agendamentos_do_dia)
+
+            if status == "Disponível":
+                with cols_placeholder[idx]:
+                    if st.button("Agendar", key=f"btn_{horario}_{barbeiro}", use_container_width=True):
+                        st.session_state.view = 'agendar'
+                        st.session_state.agendamento_info = {
+                            'horario': horario,
+                            'barbeiro': barbeiro,
+                            'data_obj': data_obj_tabela
+                        }
+                        st.rerun()
+                html_table += f"<td style='background-color:{bg_color}; text-align: center; padding: 2px;'></td>"
+                idx += 1
+            else:
+                html_table += f"<td style='background-color:{bg_color}; color:{text_color}; padding: 8px; border: 1px solid #ddd; text-align: center;'>{status}</td>"
+        html_table += "</tr>"
+    html_table += "</tbody></table>"
+    st.markdown(html_table, unsafe_allow_html=True)
+
+
+# --- JANELA 2: TELA DO FORMULÁRIO DE AGENDAMENTO (COM LÓGICA COMPLETA) ---
+elif st.session_state.view == 'agendar':
+    
+    info = st.session_state.agendamento_info
+    horario_clicado = info['horario']
+    barbeiro_clicado = info['barbeiro']
+    data_obj_agendamento = info['data_obj']
+
+    st.subheader("Finalizar Agendamento")
+    st.info(f"Agendando para **{data_obj_agendamento.strftime('%d/%m/%Y')}** às **{horario_clicado}** com **{barbeiro_clicado}**.")
+
+    with st.form("agendar_form_view"):
+        nome = st.text_input("Seu Nome Completo")
+        telefone = st.text_input("Seu Telefone (com DDD)")
+        
+        servicos_visagismo = ["Abordagem de visagismo", "Consultoria de visagismo"]
+        if barbeiro_clicado == "Aluizio":
+            servicos_disponiveis_form = [s for s in lista_servicos if s not in servicos_visagismo]
+            st.warning("Aluizio não realiza serviços de visagismo.")
         else:
-            html_table += f"<td style='background-color:{bg_color}; color:{text_color}; padding: 8px; border: 1px solid #ddd; text-align: center;'>{status}</td>"
-    html_table += "</tr>"
-html_table += "</tbody></table>"
+            servicos_disponiveis_form = list(lista_servicos)
 
-st.markdown(html_table, unsafe_allow_html=True)
+        servicos_selecionados = st.multiselect("Selecione os Serviços", servicos_disponiveis_form)
+        
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            submitted = st.form_submit_button("Confirmar Agendamento", use_container_width=True, type="primary")
+        with col2:
+            if st.form_submit_button("Voltar", use_container_width=True, type="secondary"):
+                st.session_state.view = 'tabela'
+                st.rerun()
+
+        if submitted:
+            with st.spinner("Verificando e processando..."):
+                # --- INÍCIO DA LÓGICA COMPLETA DO 'IF SUBMITTED' ---
+
+                # 1. Validação de Preenchimento Básico
+                if not nome or not telefone or not servicos_selecionados:
+                    st.error("Por favor, preencha seu nome, telefone e selecione pelo menos um serviço.")
+                    st.stop()
+                
+                # 2. Validação de Visagismo
+                visagismo_selecionado = any(s in servicos_selecionados for s in servicos_visagismo)
+                if visagismo_selecionado and barbeiro_clicado == "Aluizio":
+                     st.error("Apenas Lucas Borges realiza atendimentos de visagismo. Por favor, volte e selecione um horário com Lucas Borges.")
+                     st.stop()
+                
+                # 3. Validação de "Cabelo + Barba"
+                data_agendamento_str = data_obj_agendamento.strftime('%d/%m/%Y')
+                precisa_bloquear_proximo = False
+                corte_selecionado = any(corte in servicos_selecionados for corte in ["Tradicional", "Social", "Degradê", "Navalhado"])
+                barba_selecionada = "Barba" in servicos_selecionados
+
+                if corte_selecionado and barba_selecionada:
+                    if not verificar_disponibilidade_horario_seguinte(data_agendamento_str, horario_clicado, barbeiro_clicado):
+                        horario_seguinte_dt = datetime.strptime(horario_clicado, '%H:%M') + timedelta(minutes=30)
+                        horario_seguinte_str = horario_seguinte_dt.strftime('%H:%M')
+                        st.error(f"O barbeiro {barbeiro_clicado} não pode fazer corte e barba neste horário, pois está ocupado às {horario_seguinte_str}. Por favor, escolha outro horário ou apenas um dos serviços.")
+                        st.stop()
+                    else:
+                        precisa_bloquear_proximo = True
+
+                # 4. Ação: Salvar o Agendamento
+                agendamento_salvo = salvar_agendamento(data_agendamento_str, horario_clicado, nome, telefone, list(servicos_selecionados), barbeiro_clicado)
+
+                if agendamento_salvo:
+                    # 5. Ação: Bloquear horário seguinte, se necessário
+                    if precisa_bloquear_proximo:
+                        horario_seguinte_dt = datetime.strptime(horario_clicado, '%H:%M') + timedelta(minutes=30)
+                        horario_seguinte_str = horario_seguinte_dt.strftime('%H:%M')
+                        bloquear_horario(data_agendamento_str, horario_seguinte_str, barbeiro_clicado)
+
+                    # 6. Ação: Enviar e-mail de confirmação
+                    resumo = f"Nome: {nome}\nTelefone: {telefone}\nData: {data_agendamento_str}\nHorário: {horario_clicado}\nBarbeiro: {barbeiro_clicado}\nServiços: {', '.join(servicos_selecionados)}"
+                    enviar_email("Agendamento Confirmado", resumo)
+                    
+                    # 7. Ação: Gerar imagem e preparar para download
+                    st.session_state.imagem_bytes = gerar_imagem_resumo(nome, data_agendamento_str, horario_clicado, barbeiro_clicado, servicos_selecionados)
+                    st.session_state.nome_arquivo = f"agendamento_{nome.split(' ')[0]}.png"
+
+                    # 8. Preparar mensagem de sucesso e voltar para a tela da tabela
+                    st.session_state.agendamento_sucesso = f"Agendamento para {nome} às {horario_clicado} confirmado!"
+                    st.session_state.view = 'tabela'
+                    st.rerun()
+                else:
+                    st.error("Não foi possível agendar. O horário pode ter sido ocupado enquanto você preenchia. Por favor, volte e tente novamente.")
+
 
                 
         
@@ -641,6 +739,7 @@ with st.form("cancelar_form"):
         
                     time.sleep(5)
                     st.rerun()
+
 
 
 
