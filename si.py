@@ -496,8 +496,10 @@ horarios_tabela = [f"{h:02d}:{m:02d}" for h in range(8, 20) for m in (0, 30)]
 dia_tabela = data_obj_tabela.day
 mes_tabela = data_obj_tabela.month
 intervalo_especial = mes_tabela == 7 and 10 <= dia_tabela <= 19
+mapa_status_por_horario = {}
 
 for horario in horarios_tabela:
+    mapa_status_por_horario.setdefault(horario, {})
     html_table += f'<tr><td style="padding: 8px; border: 1px solid #ddd; text-align: center;">{horario}</td>'
     for barbeiro in barbeiros:
         # A nova regra: SÓ bloqueia as 8:00 se NÃO for o intervalo especial
@@ -888,5 +890,6 @@ if submitted_cancelar:
                 time.sleep(5)
                 st.rerun()
                 
+
 
 
